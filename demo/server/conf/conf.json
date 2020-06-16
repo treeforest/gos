@@ -1,0 +1,7 @@
+{
+  "Name": "Gos demoServerApp",
+  "Host": "0.0.0.0",
+  "TcpPort": 9999,
+  "MaxConn": 3,
+  "Version": "tcp4"
+}
