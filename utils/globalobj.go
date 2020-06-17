@@ -15,15 +15,17 @@ type GlobalObj struct {
 		Server
 	*/
 	Host    string
-	TcpPort int
+	TcpPort uint32
 	Name    string
 
 	/*
 		gos
 	*/
-	Version        string // gos 的版本号
-	MaxConn        int    // 最大连接数
-	MaxPackageSize uint32 // 数据包的最大大小
+	Version          string // gos 的版本号
+	MaxConn          uint32 // 最大连接数
+	MaxPackageSize   uint32 // 数据包的最大大小
+	WorkerPoolSize   uint32 // worker工作池大小
+	MaxWorkerTaskLen uint32 // 每个worker对应的消息队列的最大数量
 }
 
 /*
@@ -50,13 +52,15 @@ func (g *GlobalObj) Reload() {
 func init() {
 	// 默认值
 	GlobalObject = &GlobalObj{
-		Name:           "GosServerApp",
-		Version:        "V1.0",
-		TcpPort:        9999,
-		Host:           "0.0.0.0",
-		MaxConn:        1000,
-		MaxPackageSize: 4096,
+		Name:             "GosServerApp",
+		Version:          "V1.0",
+		TcpPort:          9999,
+		Host:             "0.0.0.0",
+		MaxConn:          1000,
+		MaxPackageSize:   4096,
+		WorkerPoolSize:   10,
+		MaxWorkerTaskLen: 1024,
 	}
 
-	//GlobalObject.Reload()
+	GlobalObject.Reload()
 }

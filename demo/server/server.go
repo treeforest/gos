@@ -37,8 +37,35 @@ func (r *HelloRouter) Handle(req transport.Request) {
 	}
 }
 
+func OnConnStart(c transport.Connection) {
+	fmt.Println("==> OnConnStart")
+	if err := c.Send(202, []byte("OnConnStart Begin.")); err != nil {
+		fmt.Println(err)
+	}
+
+	// 设置一些链接属性
+	c.SetProperty("Name", "treeforest")
+	c.SetProperty("Home", "github.com/treeforest")
+}
+
+func OnConnStop(c transport.Connection) {
+	fmt.Println("==> OnConnStop")
+	if err := c.Send(202, []byte("OnConnStop End.")); err != nil {
+		fmt.Println(err)
+	}
+
+	// 获取链接属性
+	v, _ := c.GetProperty("Name")
+	fmt.Printf("Name = %s\n", v.(string))
+	v, _ = c.GetProperty("Home")
+	fmt.Printf("Name = %s\n", v.(string))
+}
+
 func main() {
 	s := transport.NewServer("[lsgo V0.1]")
+
+	s.SetOnConnStartFunc(OnConnStart)
+	s.SetOnConnStopFunc(OnConnStop)
 
 	// 添加router
 	s.RegisterRouter(0, &PingRouter{})

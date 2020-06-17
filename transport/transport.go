@@ -17,6 +17,21 @@ type Server interface {
 
 	// 给当前的服务注册路由
 	RegisterRouter(msgID uint32, router Router)
+
+	// 获取当前的链接管理器
+	GetConnManager() ConnManager
+
+	// 设置在Server创建链接之前自动调用的函数
+	SetOnConnStartFunc(func(c Connection))
+
+	// 设置在Server销毁链接之后自动调用的函数
+	SetOnConnStopFunc(func(c Connection))
+
+	// 在Server创建链接之前调用
+	CallOnConnStart(c Connection)
+
+	// 在Server销毁链接之前之后调用
+	CallOnConnStop(c Connection)
 }
 
 /*
@@ -40,6 +55,15 @@ type Connection interface {
 
 	// 发送数据，将数据发送给远程的客户端
 	Send(msgID uint32, data []byte) error
+
+	// 设置链接属性
+	SetProperty(key string, value interface{})
+
+	// 获取链接属性
+	GetProperty(key string) (value interface{}, ok bool)
+
+	// 移除链接属性
+	RemoveProperty(key string)
 }
 
 // 处理链接业务的方法
@@ -117,8 +141,34 @@ type DataPacker interface {
 */
 type MessageHandler interface {
 	// 调度/执行对应的Router消息处理方法
-	Do(Request)
+	HandleRequest(Request)
 
 	// 为消息添加具体的处理逻辑
 	RegisterRouter(msgID uint32, router Router)
+
+	// 启动工作池
+	StartWorkerPool()
+
+	// // 将消息交给任务队列(taskQueue),交由worker处理
+	SendMsgToTaskQueue(req Request)
+}
+
+/*
+ 链接管理模块的抽象接口
+ */
+type ConnManager interface {
+	// 添加链接
+	Add(conn Connection)
+
+	// 删除链接
+	Remove(conn Connection)
+
+	// 根据connID获取链接
+	Get(connID uint32) (Connection, error)
+
+	// 当前连接总数
+	Len() uint32
+
+	// 清除并终止所有连接
+	ClearAllConn()
 }

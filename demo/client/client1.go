@@ -24,7 +24,7 @@ func main() {
 		_, err := conn.Write(binaryMsg)
 		if err != nil {
 			fmt.Printf("write error: %v\n", err)
-			continue
+			break
 		}
 
 		headData := make([]byte, pack.GetHeadLen())
@@ -37,7 +37,7 @@ func main() {
 		msg, err := pack.Unpack(headData)
 		if err != nil {
 			fmt.Println("transport unpack head error:", err)
-			return
+			break
 		}
 
 		if msg.GetLen() > 0 {
@@ -56,6 +56,6 @@ func main() {
 			fmt.Println("--->Recv MsgID:", msg.GetID(), ", dataLen:", msg.GetLen(), ", data:", string(msg.GetData()))
 		}
 
-		time.Sleep(time.Second * 1)
+		time.Sleep(time.Second * 3)
 	}
 }
