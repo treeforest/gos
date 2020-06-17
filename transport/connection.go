@@ -1,11 +1,11 @@
 package transport
 
 import (
+	"errors"
+	"fmt"
+	"io"
 	"log"
 	"net"
-	"errors"
-	"io"
-	"fmt"
 )
 
 /*
@@ -21,8 +21,11 @@ type connection struct {
 	// 当前链接的状态
 	closed bool
 
-	// 告知当前链接已经退出/停止的channel
+	// 告知当前链接已经退出/停止的channel(由reader告知writer)
 	existChan chan bool
+
+	// 无缓冲管道，用于读、写goroutine之间的消息通信
+	msgChan chan []byte
 
 	// msgID和对应的处理业务的API关系
 	msgHandler MessageHandler
@@ -30,11 +33,11 @@ type connection struct {
 
 func NewConnection(conn *net.TCPConn, connID uint32, msgHandler MessageHandler) Connection {
 	c := &connection{
-		conn:      conn,
-		connID:    connID,
-		closed:    false,
-		msgHandler:    msgHandler,
-		existChan: make(chan bool),
+		conn:       conn,
+		connID:     connID,
+		closed:     false,
+		msgHandler: msgHandler,
+		existChan:  make(chan bool),
 	}
 	return c
 }
@@ -43,7 +46,8 @@ func (c *connection) Start() {
 	log.Printf("Conn Start()... ConnID = %d", c.connID)
 	// 启动从当前链接读数据的业务
 	go c.startReader()
-	// TODO：启动从当前写数据的业务
+	// 启动从当前写数据的业务
+	go c.startWriter()
 }
 
 func (c *connection) Stop() {
@@ -56,8 +60,12 @@ func (c *connection) Stop() {
 	// 关闭连接
 	c.conn.Close()
 
+	// 通知writer关闭
+	c.existChan <- true
+
 	// 回收资源
 	close(c.existChan)
+	close(c.msgChan)
 }
 
 func (c *connection) GetTCPConnection() *net.TCPConn {
@@ -84,16 +92,17 @@ func (c *connection) Send(msgID uint32, data []byte) error {
 		return fmt.Errorf("Send error: pack failed, %v", err)
 	}
 
-	if _, err := c.conn.Write(binaryMsg); err != nil {
-		return fmt.Errorf("Send error: conn write failed, %v", err)
-	}
+	// 发送数据给客户端
+	c.msgChan <- binaryMsg
 
 	return nil
 }
 
-// 链接的读业务方法
+/*
+	读消息的goroutine
+*/
 func (c *connection) startReader() {
-	log.Println("Reader goroutine is running...")
+	log.Println("[Reader goroutine is running]")
 	defer func() {
 		log.Printf("connID=%d Reader is exist, remote addr is %s", c.connID, c.RemoteAddr().String())
 		c.Stop()
@@ -133,6 +142,31 @@ func (c *connection) startReader() {
 
 			// 根据绑定好的msgID进行对应的处理
 			go c.msgHandler.Do(req)
+		}
+	}
+}
+
+/*
+	写消息的goroutine
+*/
+func (c *connection) startWriter() {
+	log.Println("[Writer goroutine is running]")
+	defer func() {
+		log.Printf("connID=%d Writer is exist, remote addr is %s", c.connID, c.RemoteAddr().String())
+	}()
+
+	// 阻塞等待channel的消息，进行写给客户端
+	for {
+		select {
+		case data := <-c.msgChan:
+			// 有写数据
+			if _, err := c.conn.Write(data); err != nil {
+				log.Fatalf("Send data error: %v", err)
+				return
+			}
+		case <-c.existChan:
+			// 表示reader已经退出，此时writer同时结束
+			return
 		}
 	}
 }

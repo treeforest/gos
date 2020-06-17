@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/treeforest/gos/transport"
+	"io"
 	"net"
 	"time"
-	"io"
-	"github.com/treeforest/gos/transport"
 )
 
 func main() {
@@ -19,7 +19,7 @@ func main() {
 	for {
 		// 对消息封包
 		pack := transport.NewDataPack()
-		binaryMsg,_ := pack.Pack(transport.NewMessage(0, []byte("Hello World!")))
+		binaryMsg, _ := pack.Pack(transport.NewMessage(0, []byte("Hello World!")))
 
 		_, err := conn.Write(binaryMsg)
 		if err != nil {

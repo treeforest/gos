@@ -13,6 +13,7 @@ type dataPack struct{}
 
 var pack_once sync.Once
 var global_pack DataPacker
+
 func NewDataPack() DataPacker {
 	pack_once.Do(func() {
 		global_pack = new(dataPack)

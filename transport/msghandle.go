@@ -7,7 +7,7 @@ import (
 
 /*
 	消息处理模块的实现
- */
+*/
 type messageHandle struct {
 	// 存放每个msgID所对应的处理方法
 	apis map[uint32]Router
@@ -15,7 +15,7 @@ type messageHandle struct {
 
 func NewMessageHandler() MessageHandler {
 	return &messageHandle{
-		apis:make(map[uint32]Router),
+		apis: make(map[uint32]Router),
 	}
 }
 

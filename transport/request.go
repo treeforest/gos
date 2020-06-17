@@ -11,7 +11,7 @@ type request struct {
 func NewRequest(conn Connection, msg Message) Request {
 	return &request{
 		conn: conn,
-		msg: msg,
+		msg:  msg,
 	}
 }
 

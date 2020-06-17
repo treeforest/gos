@@ -1,10 +1,10 @@
 package transport
 
 import (
-	"testing"
-	"net"
 	"fmt"
 	"io"
+	"net"
+	"testing"
 	"time"
 )
 
@@ -12,7 +12,7 @@ import (
 func TestDataPack(t *testing.T) {
 	/*
 		模拟服务端
-	 */
+	*/
 	listener, err := net.Listen("tcp", "127.0.0.1:7777")
 	if err != nil {
 		fmt.Println("transport listen error:", err)
@@ -20,7 +20,7 @@ func TestDataPack(t *testing.T) {
 	}
 
 	go func() {
-		for  {
+		for {
 			conn, err := listener.Accept()
 			if err != nil {
 				fmt.Println("transport accept error", err)
@@ -67,20 +67,20 @@ func TestDataPack(t *testing.T) {
 	time.Sleep(time.Second * 2)
 	/*
 		模拟客户端
-	 */
+	*/
 	conn, err := net.Dial("tcp", "127.0.0.1:7777")
 	if err != nil {
-	fmt.Println("client dial error:", err)
-	 return
+		fmt.Println("client dial error:", err)
+		return
 	}
 
 	pack := NewDataPack()
 
 	// 模拟粘包过程,封装两个msg一同发送
 	msg1 := &message{
-		msgID:1,
-		dataLen:5,
-		data:[]byte{'h','e','l','l','o'},
+		msgID:   1,
+		dataLen: 5,
+		data:    []byte{'h', 'e', 'l', 'l', 'o'},
 	}
 	data, err := pack.Pack(msg1)
 	if err != nil {
@@ -89,9 +89,9 @@ func TestDataPack(t *testing.T) {
 	}
 
 	msg2 := &message{
-		msgID:2,
-		dataLen:5,
-		data:[]byte{'w','o','r','l','d'},
+		msgID:   2,
+		dataLen: 5,
+		data:    []byte{'w', 'o', 'r', 'l', 'd'},
 	}
 	data2, err := pack.Pack(msg2)
 	if err != nil {
