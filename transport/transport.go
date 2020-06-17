@@ -155,7 +155,7 @@ type MessageHandler interface {
 
 /*
  链接管理模块的抽象接口
- */
+*/
 type ConnManager interface {
 	// 添加链接
 	Add(conn Connection)

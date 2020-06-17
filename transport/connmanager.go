@@ -1,9 +1,9 @@
 package transport
 
 import (
-	"sync"
-	"log"
 	"errors"
+	"log"
+	"sync"
 )
 
 type connManager struct {
@@ -16,19 +16,19 @@ func NewConnManager() ConnManager {
 }
 
 // 添加链接
-func (m *connManager) Add(conn Connection){
+func (m *connManager) Add(conn Connection) {
 	m.connMap.Store(conn.GetConnID(), conn)
 	log.Printf("connID = %d add to ConnManager success: conn num = %d \n", conn.GetConnID(), m.Len())
 }
 
 // 删除链接
-func (m *connManager) Remove(conn Connection){
+func (m *connManager) Remove(conn Connection) {
 	m.connMap.Delete(conn.GetConnID())
 	log.Printf("connID = %d remove to ConnManager success: conn num = %d \n", conn.GetConnID(), m.Len())
 }
 
 // 根据connID获取链接
-func (m *connManager) Get(connID uint32) (Connection, error){
+func (m *connManager) Get(connID uint32) (Connection, error) {
 	if conn, ok := m.connMap.Load(connID); ok {
 		return conn.(Connection), nil
 	}
@@ -36,8 +36,8 @@ func (m *connManager) Get(connID uint32) (Connection, error){
 }
 
 // 当前连接总数
-func (m *connManager) Len() uint32{
-	var nLen uint32 = 0 
+func (m *connManager) Len() uint32 {
+	var nLen uint32 = 0
 	m.connMap.Range(func(key, value interface{}) bool {
 		nLen++
 		return true
@@ -46,7 +46,7 @@ func (m *connManager) Len() uint32{
 }
 
 // 清除并终止所有连接
-func (m *connManager) ClearAllConn(){
+func (m *connManager) ClearAllConn() {
 	m.connMap.Range(func(key, value interface{}) bool {
 		// 主动停止链接
 		conn := value.(Connection)

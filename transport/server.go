@@ -143,6 +143,6 @@ func NewServer(serverName string) Server {
 		ip:         utils.GlobalObject.Host,
 		port:       utils.GlobalObject.TcpPort,
 		msgHandler: NewMessageHandler(),
-		connMgr:	NewConnManager(),
+		connMgr:    NewConnManager(),
 	}
 }

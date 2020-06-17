@@ -2,8 +2,8 @@ package transport
 
 import (
 	"fmt"
-	"log"
 	"github.com/treeforest/gos/utils"
+	"log"
 )
 
 /*
@@ -72,7 +72,7 @@ func (h *messageHandle) startOneWorker(workerID uint32, task chan Request) {
 	for {
 		select {
 		// 有消息到来，出列一个客户端消息
-		case req := <- task:
+		case req := <-task:
 			h.HandleRequest(req)
 		}
 	}

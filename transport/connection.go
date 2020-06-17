@@ -3,10 +3,10 @@ package transport
 import (
 	"errors"
 	"fmt"
+	"github.com/treeforest/gos/utils"
 	"io"
 	"log"
 	"net"
-	"github.com/treeforest/gos/utils"
 	"sync"
 )
 
@@ -137,7 +137,6 @@ func (c *connection) GetProperty(key string) (value interface{}, ok bool) {
 func (c *connection) RemoveProperty(key string) {
 	c.propertyMap.Delete(key)
 }
-
 
 /*
 	读消息的goroutine
