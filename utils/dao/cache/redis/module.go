@@ -29,3 +29,4 @@ func (m *Module) Prefix() string {
 func (m *Module) String() string {
 	return fmt.Sprintf("module: %s", m.module)
 }
+

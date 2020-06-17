@@ -126,7 +126,7 @@ func NewRedisObj(serverAdd, password string, maxidle int) RedisOp {
 //				return nil, err
 //			}
 //			if len(self.Password) > 0 {
-//				if _, err := c.Do("AUTH", self.Password); err != nil {
+//				if _, err := c.HandleRequest("AUTH", self.Password); err != nil {
 //					c.Close()
 //					return nil, err
 //				}
@@ -134,7 +134,7 @@ func NewRedisObj(serverAdd, password string, maxidle int) RedisOp {
 //			return c, err
 //		},
 //		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-//			_, err := c.Do("PING")
+//			_, err := c.HandleRequest("PING")
 //			return err
 //		},
 //	}
@@ -235,7 +235,7 @@ func (self *redisOp) SetKey(sKey, sValue string) error {
 	defer conn.Close()
 	_, err := conn.Do("set", sKey, sValue)
 	if err != nil {
-		println("conn.Do set:  ", err.Error())
+		println("conn.HandleRequest set:  ", err.Error())
 		return err
 	}
 
@@ -247,7 +247,7 @@ func (self *redisOp) SetExpireKey(sKey, sValue string, lExpireTime int) error {
 	defer conn.Close()
 	_, err := conn.Do("SET", sKey, sValue, "EX", lExpireTime)
 	if err != nil {
-		println("conn.Do SetExpireCache:  ", err.Error())
+		println("conn.HandleRequest SetExpireCache:  ", err.Error())
 		return err
 	}
 
@@ -259,7 +259,7 @@ func (self *redisOp) ExpireKey(sKey string, lExpireTime int) error {
 	defer conn.Close()
 	_, err := conn.Do("expire", sKey, lExpireTime)
 	if err != nil {
-		println("conn.Do ExpireKey:  ", err.Error())
+		println("conn.HandleRequest ExpireKey:  ", err.Error())
 		return err
 	}
 	return nil
@@ -271,7 +271,7 @@ func (self *redisOp) SetExpireNXkey(sKey, sValue string, lExpireTime int) (strin
 	r, err := conn.Do("SET", sKey, sValue, "EX", lExpireTime, "NX")
 	v, err := redis.String(r, err)
 	if err != nil {
-		println("conn.Do SetExpireNXkey:  ", err.Error())
+		println("conn.HandleRequest SetExpireNXkey:  ", err.Error())
 		return v, err
 	}
 
@@ -284,7 +284,7 @@ func (self *redisOp) Incrbykey(sKey string, increment int64) (int64, error) {
 	r, err := conn.Do("INCRBY", sKey, increment)
 	v, err := redis.Int64(r, err)
 	if err != nil {
-		println("conn.Do Incrbykey:  ", err.Error())
+		println("conn.HandleRequest Incrbykey:  ", err.Error())
 		return v, err
 	}
 
@@ -308,7 +308,7 @@ func (self *redisOp) DelKey(sKey string) error {
 	defer conn.Close()
 	_, err := conn.Do("del", sKey)
 	if err != nil {
-		println("conn.Do del:  ", err.Error())
+		println("conn.HandleRequest del:  ", err.Error())
 		return err
 	}
 
@@ -320,7 +320,7 @@ func (self *redisOp) DelMKey(keys []string) error {
 	defer conn.Close()
 	_, err := conn.Do("del", redis.Args{}.AddFlat(keys)...)
 	if err != nil {
-		println("conn.Do del:  ", err.Error())
+		println("conn.HandleRequest del:  ", err.Error())
 		return err
 	}
 
@@ -356,7 +356,7 @@ func (self *redisOp) SAdd(key, member interface{}) (int, error) {
 	defer conn.Close()
 	v, err := redis.Int(conn.Do("SADD", key, member))
 	if err != nil {
-		println("conn.Do SetAdd:  ", err.Error())
+		println("conn.HandleRequest SetAdd:  ", err.Error())
 		return 0, err
 	}
 
@@ -369,7 +369,7 @@ func (self *redisOp) SCard(key string) (int, error) {
 	r, err := conn.Do("SCARD", key)
 	v, err := redis.Int(r, err)
 	if err != nil {
-		println("conn.Do SCARD:  ", err.Error())
+		println("conn.HandleRequest SCARD:  ", err.Error())
 		return v, err
 	}
 
@@ -381,7 +381,7 @@ func (self *redisOp) SMAdd(key string, members []interface{}) (int, error) {
 	defer conn.Close()
 	v, err := redis.Int(conn.Do("SADD", redis.Args{}.Add(key).AddFlat(members)...))
 	if err != nil {
-		println("conn.Do SetAdd:  ", err.Error())
+		println("conn.HandleRequest SetAdd:  ", err.Error())
 		return 0, err
 	}
 
@@ -394,7 +394,7 @@ func (self *redisOp) SMembers(key string) ([]string, error) {
 	r, err := conn.Do("SMEMBERS", key)
 	v, err := redis.Strings(r, err)
 	if err != nil {
-		println("conn.Do SetMembers:  ", err.Error())
+		println("conn.HandleRequest SetMembers:  ", err.Error())
 		return v, err
 	}
 
@@ -407,7 +407,7 @@ func (self *redisOp) SMsUint64(key string) ([]int64, error) {
 	r, err := conn.Do("SMEMBERS", key)
 	v, err := redis.Int64s(r, err)
 	if err != nil {
-		println("conn.Do SetMembers:  ", err.Error())
+		println("conn.HandleRequest SetMembers:  ", err.Error())
 		return v, err
 	}
 
@@ -419,7 +419,7 @@ func (self *redisOp) SRem(key, member interface{}) (int, error) {
 	defer conn.Close()
 	v, err := redis.Int(conn.Do("SREM", key, member))
 	if err != nil {
-		println("conn.Do SREM:  ", err.Error())
+		println("conn.HandleRequest SREM:  ", err.Error())
 		return 0, err
 	}
 
@@ -431,7 +431,7 @@ func (self *redisOp) SMRem(key string, members []string) (int, error) {
 	defer conn.Close()
 	v, err := redis.Int(conn.Do("SREM", redis.Args{}.Add(key).AddFlat(members)...))
 	if err != nil {
-		println("conn.Do SREM:  ", err.Error())
+		println("conn.HandleRequest SREM:  ", err.Error())
 		return 0, err
 	}
 
@@ -444,7 +444,7 @@ func (self *redisOp) SIsmembers(key, member string) (bool, error) {
 	r, err := conn.Do("SISMEMBER", key, member)
 	v, err := redis.Bool(r, err)
 	if err != nil {
-		println("conn.Do SetSismembers:  ", err.Error())
+		println("conn.HandleRequest SetSismembers:  ", err.Error())
 		return v, err
 	}
 
@@ -456,7 +456,7 @@ func (self *redisOp) ZAdd(key string, score int, member string) error {
 	defer conn.Close()
 	_, err := conn.Do("ZADD", key, score, member)
 	if err != nil {
-		println("conn.Do ZADD:  ", err.Error())
+		println("conn.HandleRequest ZADD:  ", err.Error())
 		return err
 	}
 
@@ -467,9 +467,9 @@ func (self *redisOp) ZMAdd(key string, members []interface{}) error {
 	conn := self.NewRedisConnect()
 	defer conn.Close()
 	_, err := conn.Do("ZADD", redis.Args{}.Add(key).AddFlat(members)...)
-	//_, err := conn.Do("ZADD", key, score, member)
+	//_, err := conn.HandleRequest("ZADD", key, score, member)
 	if err != nil {
-		println("conn.Do ZADD More:  ", err.Error())
+		println("conn.HandleRequest ZADD More:  ", err.Error())
 		return err
 	}
 
@@ -482,7 +482,7 @@ func (self *redisOp) ZCount(key string, min, max int) (int, error) {
 	r, err := conn.Do("ZCOUNT", key, min, max)
 	v, err := redis.Int(r, err)
 	if err != nil {
-		println("conn.Do ZCOUNT:  ", err.Error())
+		println("conn.HandleRequest ZCOUNT:  ", err.Error())
 		return v, err
 	}
 
@@ -495,7 +495,7 @@ func (self *redisOp) ZRange(key string, start, stop int) ([]string, error) {
 	r, err := conn.Do("ZRANGE", key, start, stop)
 	v, err := redis.Strings(r, err)
 	if err != nil {
-		println("conn.Do ZRANGE:  ", err.Error())
+		println("conn.HandleRequest ZRANGE:  ", err.Error())
 		return v, err
 	}
 
@@ -508,7 +508,7 @@ func (self *redisOp) ZRangeWithScores(key string, start, stop int) (map[string]s
 	r, err := conn.Do("ZRANGE", key, start, stop, "WITHSCORES")
 	v, err := redis.StringMap(r, err)
 	if err != nil {
-		println("conn.Do ZRANGE Withscores:  ", err.Error())
+		println("conn.HandleRequest ZRANGE Withscores:  ", err.Error())
 		return v, err
 	}
 
@@ -524,7 +524,7 @@ func (self *redisOp) ZPop(key string, num int) (result map[string]int, err error
 		if err != nil {
 			_, err = conn.Do("DISCARD")
 			if err != nil {
-				println("conn.Do ZPop DISCARD:  ", err.Error())
+				println("conn.HandleRequest ZPop DISCARD:  ", err.Error())
 
 			}
 		}
@@ -533,25 +533,25 @@ func (self *redisOp) ZPop(key string, num int) (result map[string]int, err error
 	// Loop until transaction is successful.
 	for {
 		if _, err := conn.Do("WATCH", key); err != nil {
-			println("conn.Do ZPop WATCH:  ", err.Error())
+			println("conn.HandleRequest ZPop WATCH:  ", err.Error())
 
 			return nil, err
 		}
 
 		members, err := redis.IntMap(conn.Do("ZRANGE", key, 0, num, "WITHSCORES"))
 		if err != nil {
-			println("conn.Do ZPop StringMap:  ", err.Error())
+			println("conn.HandleRequest ZPop StringMap:  ", err.Error())
 
 			return nil, err
 		}
 		//if len(members) != 1 {
-		//	println("conn.Do ZPop StringMap:  ", err.Error())
+		//	println("conn.HandleRequest ZPop StringMap:  ", err.Error())
 		//	return nil, redis.ErrNil
 		//}
 
 		err = conn.Send("MULTI")
 		if err != nil {
-			println("conn.Do ZPop Send MULTI:  ", err.Error())
+			println("conn.HandleRequest ZPop Send MULTI:  ", err.Error())
 
 		}
 		//dels := []string{}
@@ -572,18 +572,18 @@ func (self *redisOp) ZPop(key string, num int) (result map[string]int, err error
 
 		err = conn.Send("ZREM", all...)
 		if err != nil {
-			println("conn.Do ZPop Send ZREM:  ", err.Error())
+			println("conn.HandleRequest ZPop Send ZREM:  ", err.Error())
 
 		}
 
 		queued, err := conn.Do("EXEC")
 		if err != nil {
-			println("conn.Do ZPop EXEC:  ", err.Error())
+			println("conn.HandleRequest ZPop EXEC:  ", err.Error())
 			return nil, err
 		}
 
 		if queued != nil {
-			println("conn.Do ZPop queued:  ")
+			println("conn.HandleRequest ZPop queued:  ")
 
 			result = members
 			break
@@ -599,7 +599,7 @@ func (self *redisOp) ZRangeByScores(key string, start, stop int) ([]string, erro
 	r, err := conn.Do("ZRANGEBYSCORE", key, start, stop, "WITHSCORES")
 	v, err := redis.Strings(r, err)
 	if err != nil {
-		println("conn.Do ZRANGEBYSCORE:  ", err.Error())
+		println("conn.HandleRequest ZRANGEBYSCORE:  ", err.Error())
 		return v, err
 	}
 
@@ -613,7 +613,7 @@ func (self *redisOp) ZRangeByScoresWithLimit(key string, min, max string, offset
 	r, err := conn.Do("ZRANGEBYSCORE", key, min, max, "LIMIT", offset, count)
 	v, err := redis.Strings(r, err)
 	if err != nil {
-		println("conn.Do ZRANGEBYSCORE:  ", err.Error())
+		println("conn.HandleRequest ZRANGEBYSCORE:  ", err.Error())
 		return v, err
 	}
 
@@ -626,7 +626,7 @@ func (self *redisOp) ZIncrby(key string, increment int, member string) (int64, e
 	r, err := conn.Do("ZINCRBY", key, increment, member)
 	v, err := redis.Int64(r, err)
 	if err != nil {
-		println("conn.Do ZINCRBY:  ", err.Error())
+		println("conn.HandleRequest ZINCRBY:  ", err.Error())
 		return v, err
 	}
 
@@ -639,7 +639,7 @@ func (self *redisOp) ZSocre(key, member string) (int64, error) {
 	r, err := conn.Do("ZSCORE", key, member)
 	v, err := redis.Int64(r, err)
 	if err != nil {
-		println("conn.Do ZSCORE:  ", err.Error())
+		println("conn.HandleRequest ZSCORE:  ", err.Error())
 		return v, err
 	}
 
@@ -651,7 +651,7 @@ func (self *redisOp) ZRem(key string, members []string) error {
 	defer conn.Close()
 	_, err := conn.Do("ZREM", redis.Args{}.Add(key).AddFlat(members)...)
 	if err != nil {
-		println("conn.Do ZREM:  ", err.Error())
+		println("conn.HandleRequest ZREM:  ", err.Error())
 		return err
 	}
 
@@ -664,7 +664,7 @@ func (self *redisOp) ZRem2(key string, members []string) (int64, error) {
 	r, err := conn.Do("ZREM2", redis.Args{}.Add(key).AddFlat(members)...)
 	v, err := redis.Int64(r, err)
 	if err != nil {
-		println("conn.Do ZREM2:  ", err.Error())
+		println("conn.HandleRequest ZREM2:  ", err.Error())
 		return v, err
 	}
 
@@ -677,7 +677,7 @@ func (self *redisOp) ZRevRangeWithScores(key string, begin, end int) (map[string
 	r, err := conn.Do("ZREVRANGE", key, begin, end, "WITHSCORES")
 	v, err := redis.StringMap(r, err)
 	if err != nil {
-		println("conn.Do ZREVRANGE Withscores:  ", err.Error())
+		println("conn.HandleRequest ZREVRANGE Withscores:  ", err.Error())
 		return v, err
 	}
 
@@ -690,7 +690,7 @@ func (self *redisOp) ZRevRangeWithScores2(key string, begin, end int) ([]string,
 	r, err := conn.Do("ZREVRANGE", key, begin, end, "WITHSCORES")
 	v, err := redis.Strings(r, err)
 	if err != nil {
-		println("conn.Do ZREVRANGE Withscores:  ", err.Error())
+		println("conn.HandleRequest ZREVRANGE Withscores:  ", err.Error())
 		return v, err
 	}
 
@@ -703,7 +703,7 @@ func (self *redisOp) ZCard(key string) (int64, error) {
 	r, err := conn.Do("ZCARD", key)
 	v, err := redis.Int64(r, err)
 	if err != nil {
-		println("conn.Do ZCARD:  ", err.Error())
+		println("conn.HandleRequest ZCARD:  ", err.Error())
 		return v, err
 	}
 
@@ -716,7 +716,7 @@ func (self *redisOp) ZRevRange(key string, begin, end int) ([]string, error) {
 	r, err := conn.Do("ZREVRANGE", key, begin, end)
 	v, err := redis.Strings(r, err)
 	if err != nil {
-		println("conn.Do ZREVRANGE:  ", err.Error())
+		println("conn.HandleRequest ZREVRANGE:  ", err.Error())
 		return v, err
 	}
 
@@ -729,7 +729,7 @@ func (self *redisOp) ZRevRank(key string, member string) (int64, error) {
 	r, err := conn.Do("ZREVRANK", key, member)
 	v, err := redis.Int64(r, err)
 	if err != nil {
-		println("conn.Do ZREVRANK:  ", err.Error())
+		println("conn.HandleRequest ZREVRANK:  ", err.Error())
 		return v, err
 	}
 
@@ -742,7 +742,7 @@ func (self *redisOp) ZREMRANGEBYSCORE(key string, begin, end int) (int64, error)
 	r, err := conn.Do("ZREMRANGEBYSCORE", key, begin, end)
 	v, err := redis.Int64(r, err)
 	if err != nil {
-		println("conn.Do ZREMRANGEBYSCORE:  ", err.Error())
+		println("conn.HandleRequest ZREMRANGEBYSCORE:  ", err.Error())
 		return v, err
 	}
 
@@ -755,7 +755,7 @@ func (self *redisOp) LPush(key, value string) error {
 	defer conn.Close()
 	_, err := conn.Do("lpush", key, value)
 	if err != nil {
-		println("conn.Do lpush:  ", err.Error())
+		println("conn.HandleRequest lpush:  ", err.Error())
 		return err
 	}
 
@@ -767,7 +767,7 @@ func (self *redisOp) LPushMore(key string, values []string) error {
 	defer conn.Close()
 	_, err := conn.Do("lpush", redis.Args{}.Add(key).AddFlat(values)...)
 	if err != nil {
-		println("conn.Do lpush:  ", err.Error())
+		println("conn.HandleRequest lpush:  ", err.Error())
 		return err
 	}
 
@@ -779,7 +779,7 @@ func (self *redisOp) RPushMore(key string, values []interface{}) error {
 	defer conn.Close()
 	_, err := conn.Do("rpush", redis.Args{}.Add(key).AddFlat(values)...)
 	if err != nil {
-		println("conn.Do rpushmore:  ", err.Error())
+		println("conn.HandleRequest rpushmore:  ", err.Error())
 		return err
 	}
 
@@ -791,7 +791,7 @@ func (self *redisOp) RPush(key, value string) error {
 	defer conn.Close()
 	_, err := conn.Do("rpush", key, value)
 	if err != nil {
-		println("conn.Do rpush:  ", err.Error())
+		println("conn.HandleRequest rpush:  ", err.Error())
 		return err
 	}
 
@@ -814,7 +814,7 @@ func (self *redisOp) RPushMoreByByte(key string, values []BasePB) error {
 
 	_, err := conn.Do("rpush", redis.Args{}.Add(key).AddFlat(bys)...)
 	if err != nil {
-		println("conn.Do rpush:  ", err.Error())
+		println("conn.HandleRequest rpush:  ", err.Error())
 		return err
 	}
 
@@ -829,7 +829,7 @@ func (self *redisOp) LRange(key string, begin, end int) ([]string, error) {
 	r, err := conn.Do("LRANGE", key, begin, end)
 	v, err := redis.Strings(r, err)
 	if err != nil {
-		println("conn.Do LRANGE:  ", err.Error())
+		println("conn.HandleRequest LRANGE:  ", err.Error())
 		return v, err
 	}
 
@@ -842,7 +842,7 @@ func (self *redisOp) LPop(key string) (string, error) {
 	r, err := conn.Do("LPOP", key)
 	v, err := redis.String(r, err)
 	if err != nil {
-		println("conn.Do LPOP:  ", err.Error())
+		println("conn.HandleRequest LPOP:  ", err.Error())
 		return v, err
 	}
 
@@ -856,7 +856,7 @@ func (self *redisOp) RPop(key string) (string, error) {
 	r, err := conn.Do("RPOP", key)
 	v, err := redis.String(r, err)
 	if err != nil {
-		println("conn.Do RPOP:  ", err.Error())
+		println("conn.HandleRequest RPOP:  ", err.Error())
 		return v, err
 	}
 
@@ -869,7 +869,7 @@ func (self *redisOp) LLEN(key string) (int, error) {
 	r, err := conn.Do("LLEN", key)
 	len, err := redis.Int(r, err)
 	if err != nil {
-		println("conn.Do LLEN:  ", err.Error())
+		println("conn.HandleRequest LLEN:  ", err.Error())
 		return 0, err
 	}
 
@@ -882,7 +882,7 @@ func (self *redisOp) LIndex(key string, index int) (interface{}, error) {
 	r, err := conn.Do("LINDEX", key, index)
 	v, err := redis.Values(r, err)
 	if err != nil {
-		println("conn.Do LINDEX:  ", err.Error())
+		println("conn.HandleRequest LINDEX:  ", err.Error())
 		return 0, err
 	}
 
@@ -894,7 +894,7 @@ func (self *redisOp) LInsert(key, pivot string, value ...interface{}) error {
 	defer conn.Close()
 	_, err := conn.Do("LINSERT", key, "BEFORE", pivot, value)
 	if err != nil {
-		println("conn.Do LINSERT:  ", err.Error())
+		println("conn.HandleRequest LINSERT:  ", err.Error())
 		return err
 	}
 
@@ -906,7 +906,7 @@ func (self *redisOp) LTrim(key string, begin, end int) error {
 	defer conn.Close()
 	_, err := conn.Do("LTRIM", key, begin, end)
 	if err != nil {
-		println("conn.Do LTRIM:  ", err.Error())
+		println("conn.HandleRequest LTRIM:  ", err.Error())
 		return err
 	}
 
@@ -920,7 +920,7 @@ func (self *redisOp) LRem(key interface{}, count int, value interface{}) (int64,
 	r, err := conn.Do("LREM", key, count, value)
 	v, err := redis.Int64(r, err)
 	if err != nil {
-		println("conn.Do LREM:  ", err.Error())
+		println("conn.HandleRequest LREM:  ", err.Error())
 		return v, err
 	}
 
@@ -932,7 +932,7 @@ func (self *redisOp) HMSet(hashkey string, args interface{}) error {
 	defer conn.Close()
 	_, err := conn.Do("HMSET", redis.Args{}.Add(hashkey).AddFlat(args)...)
 	if err != nil {
-		println("conn.Do HMSET:  ", err.Error())
+		println("conn.HandleRequest HMSET:  ", err.Error())
 		return err
 	}
 
@@ -953,7 +953,7 @@ func (self *redisOp) HMListset(hashkey string, fields, values []string) error {
 	defer conn.Close()
 	_, err := conn.Do("HMSET", redis.Args{}.Add(hashkey).AddFlat(args)...)
 	if err != nil {
-		println("conn.Do HashMListset:  ", err.Error())
+		println("conn.HandleRequest HashMListset:  ", err.Error())
 		return err
 	}
 
@@ -964,7 +964,7 @@ func (self *redisOp) HSet(hashkey, field, value string) error {
 	defer conn.Close()
 	_, err := conn.Do("HSET", hashkey, field, value)
 	if err != nil {
-		println("conn.Do HSET:  ", err.Error())
+		println("conn.HandleRequest HSET:  ", err.Error())
 		return err
 	}
 
@@ -977,7 +977,7 @@ func (self *redisOp) HGet(hashkey, field string) (string, error) {
 	r, err := conn.Do("HGET", hashkey, field)
 	v, err := redis.String(r, err)
 	if err != nil {
-		println("conn.Do HGET:  ", err.Error())
+		println("conn.HandleRequest HGET:  ", err.Error())
 		return v, err
 	}
 
@@ -996,7 +996,7 @@ func (self *redisOp) HMget(hashkey string, fields []string) (map[string]string, 
 	r, err := conn.Do("HMGET", redis.Args{}.Add(hashkey).AddFlat(fields)...)
 	v, err := redis.Strings(r, err)
 	if err != nil {
-		println("conn.Do HashMget:  ", err.Error())
+		println("conn.HandleRequest HashMget:  ", err.Error())
 		return values, err
 	}
 
@@ -1017,7 +1017,7 @@ func (self *redisOp) HMgetSlice(hashkey string, fields []string) ([]string, erro
 	r, err := conn.Do("HMGET", redis.Args{}.Add(hashkey).AddFlat(fields)...)
 	v, err := redis.Strings(r, err)
 	if err != nil {
-		println("conn.Do HMGET:  ", err.Error())
+		println("conn.HandleRequest HMGET:  ", err.Error())
 		return v, err
 	}
 
@@ -1029,7 +1029,7 @@ func (self *redisOp) HDel(hashkey, filed string) error {
 	defer conn.Close()
 	_, err := conn.Do("HDEL", hashkey, filed)
 	if err != nil {
-		println("conn.Do HDEL:  ", err.Error())
+		println("conn.HandleRequest HDEL:  ", err.Error())
 		return err
 	}
 
@@ -1042,7 +1042,7 @@ func (self *redisOp) HLen(hashkey string) (int, error) {
 	r, err := conn.Do("HLEN", hashkey)
 	v, err := redis.Int(r, err)
 	if err != nil {
-		println("conn.Do HLEN:  ", err.Error())
+		println("conn.HandleRequest HLEN:  ", err.Error())
 		return v, err
 	}
 
@@ -1055,7 +1055,7 @@ func (self *redisOp) HKeys(hashkey string) ([]string, error) {
 	r, err := conn.Do("HKEYS", hashkey)
 	v, err := redis.Strings(r, err)
 	if err != nil {
-		println("conn.Do HKEYS:  ", err.Error())
+		println("conn.HandleRequest HKEYS:  ", err.Error())
 		return v, err
 	}
 
@@ -1068,7 +1068,7 @@ func (self *redisOp) HIncrby(hashkey, filed string, increment int32) (int64, err
 	r, err := conn.Do("HINCRBY", hashkey, filed, increment)
 	v, err := redis.Int64(r, err)
 	if err != nil {
-		println("conn.Do HINCRBY:  ", err.Error())
+		println("conn.HandleRequest HINCRBY:  ", err.Error())
 		return v, err
 	}
 
@@ -1080,7 +1080,7 @@ func (self *redisOp) HGetAllIntInt(hashkey string) (map[int64]int64, error) {
 	r, err := conn.Do("HGETALL", hashkey)
 	value, err := redis.StringMap(r, err)
 	if err != nil {
-		println("conn.Do HGETALL:  ", err.Error())
+		println("conn.HandleRequest HGETALL:  ", err.Error())
 		conn.Close()
 		return map[int64]int64{}, err
 	}
@@ -1107,7 +1107,7 @@ func (self *redisOp) HGetAllIntString(hashkey string) (map[int64]string, error) 
 	r, err := conn.Do("HGETALL", hashkey)
 	value, err := redis.StringMap(r, err)
 	if err != nil {
-		println("conn.Do HGETALL:  ", err.Error())
+		println("conn.HandleRequest HGETALL:  ", err.Error())
 		conn.Close()
 		return map[int64]string{}, err
 	}
@@ -1130,7 +1130,7 @@ func (self *redisOp) HGetAllStringString(hashkey string) (map[string]string, err
 	r, err := conn.Do("HGETALL", hashkey)
 	value, err := redis.StringMap(r, err)
 	if err != nil {
-		println("conn.Do HGETALL:  ", err.Error())
+		println("conn.HandleRequest HGETALL:  ", err.Error())
 		return map[string]string{}, err
 	}
 	return value, nil
@@ -1142,7 +1142,7 @@ func (self *redisOp) HExistsInt(hashkey string, filed int64) (bool, error) {
 	r, err := conn.Do("HEXISTS", hashkey, filed)
 	v, err := redis.Bool(r, err)
 	if err != nil {
-		println("conn.Do HEXISTS:  ", err.Error())
+		println("conn.HandleRequest HEXISTS:  ", err.Error())
 		return v, err
 	}
 	return v, nil
@@ -1154,7 +1154,7 @@ func (self *redisOp) HExistsString(hashkey string, filed string) (bool, error) {
 	r, err := conn.Do("HEXISTS", hashkey, filed)
 	v, err := redis.Bool(r, err)
 	if err != nil {
-		println("conn.Do HEXISTS:  ", err.Error())
+		println("conn.HandleRequest HEXISTS:  ", err.Error())
 		return v, err
 	}
 
@@ -1174,7 +1174,7 @@ func (self *redisOp) RedisPing() (bool, error) {
 	r, err := conn.Do("PING")
 	v, err := redis.String(r, err)
 	if err != nil {
-		println("conn.Do PING:  ", err.Error())
+		println("conn.HandleRequest PING:  ", err.Error())
 		return false, err
 	}
 
@@ -1223,6 +1223,6 @@ func (self *redisOp) LockCallback(lockKey string, callback func(lockKey string),
 
 	// unlock
 	//conn = self.NewRedisConnect()
-	//conn.Do("del", lockKey)
+	//conn.HandleRequest("del", lockKey)
 	return nil
 }
