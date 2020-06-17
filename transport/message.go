@@ -1,4 +1,4 @@
-package server
+package transport
 
 type message struct {
 	msgID   uint32 //消息ID
@@ -6,8 +6,12 @@ type message struct {
 	data    []byte //消息内容
 }
 
-func NewMessage() Message {
-	return &message{}
+func NewMessage(id uint32, data []byte) Message {
+	return &message{
+		msgID:   id,
+		dataLen: uint32(len(data)),
+		data:    data,
+	}
 }
 
 // 获取消息的ID

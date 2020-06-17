@@ -1,17 +1,23 @@
-package server
+package transport
 
 import (
 	"bytes"
 	"encoding/binary"
 	"errors"
 	"github.com/treeforest/gos/utils"
+	"sync"
 )
 
 // 封包、拆包的具体模块
 type dataPack struct{}
 
+var pack_once sync.Once
+var global_pack DataPacker
 func NewDataPack() DataPacker {
-	return &dataPack{}
+	pack_once.Do(func() {
+		global_pack = new(dataPack)
+	})
+	return global_pack
 }
 
 // 获取数据包长度

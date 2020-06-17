@@ -1,4 +1,4 @@
-package server
+package transport
 
 import "net"
 
@@ -16,7 +16,7 @@ type Server interface {
 	Serve()
 
 	// 给当前的服务注册路由
-	RegisterRouter(Router)
+	RegisterRouter(msgID uint32, router Router)
 }
 
 /*
@@ -39,7 +39,7 @@ type Connection interface {
 	RemoteAddr() net.Addr
 
 	// 发送数据，将数据发送给远程的客户端
-	Send(data []byte) error
+	Send(msgID uint32, data []byte) error
 }
 
 // 处理链接业务的方法
@@ -55,6 +55,9 @@ type Request interface {
 
 	// 得到请求的消息数据
 	GetData() []byte
+
+	// 得到当前请求的消息ID
+	GetMsgID() uint32
 }
 
 /*
@@ -107,4 +110,15 @@ type DataPacker interface {
 
 	// 拆包方法
 	Unpack([]byte) (Message, error)
+}
+
+/*
+ 消息管理抽象层
+ */
+type MessageHandler interface {
+	// 调度/执行对应的Router消息处理方法
+	Do(Request)
+
+	// 为消息添加具体的处理逻辑
+	RegisterRouter(msgID uint32, router Router)
 }

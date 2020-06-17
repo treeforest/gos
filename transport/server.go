@@ -1,4 +1,4 @@
-package server
+package transport
 
 import (
 	"fmt"
@@ -21,8 +21,8 @@ type server struct {
 	// 服务器监听的接口
 	port int
 
-	// 当前的Server注册的路由
-	router Router
+	// 当前的Server消息管理模块，绑定msgID与对应的业务api关系
+	msgHandler MessageHandler
 }
 
 func (s *server) Serve() {
@@ -53,7 +53,7 @@ func (s *server) Start() {
 			return
 		}
 
-		log.Printf("start server %s success.", s.name)
+		log.Printf("start transport %s success.", s.name)
 		var cid uint32 = 0
 
 		for {
@@ -64,7 +64,7 @@ func (s *server) Start() {
 			}
 
 			// 处理新链接的业务
-			dealConn := NewConnection(conn, cid, s.router)
+			dealConn := NewConnection(conn, cid, s.msgHandler)
 			cid++
 
 			// 启动当前的链接业务处理
@@ -77,9 +77,8 @@ func (s *server) Stop() {
 
 }
 
-func (s *server) RegisterRouter(router Router) {
-	s.router = router
-	log.Println("Register router success.")
+func (s *server) RegisterRouter(msgID uint32, router Router) {
+	s.msgHandler.RegisterRouter(msgID, router)
 }
 
 /*
@@ -91,7 +90,7 @@ func NewServer(serverName string) Server {
 		tcpVersion: "tcp4",
 		ip:         utils.GlobalObject.Host,
 		port:       utils.GlobalObject.TcpPort,
-		router:     nil,
+		msgHandler: NewMessageHandler(),
 	}
 
 	return s

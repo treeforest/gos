@@ -1,17 +1,17 @@
-package server
+package transport
 
 type request struct {
 	// 已经和客户建立好的链接
 	conn Connection
 
 	// 客户端请求的数据
-	data []byte
+	msg Message
 }
 
-func NewRequest(conn Connection, data []byte) Request {
+func NewRequest(conn Connection, msg Message) Request {
 	return &request{
 		conn: conn,
-		data: data,
+		msg: msg,
 	}
 }
 
@@ -22,5 +22,9 @@ func (r *request) GetConnection() Connection {
 
 // 得到请求的消息数据
 func (r *request) GetData() []byte {
-	return r.data
+	return r.msg.GetData()
+}
+
+func (r *request) GetMsgID() uint32 {
+	return r.msg.GetID()
 }

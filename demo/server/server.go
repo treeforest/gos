@@ -2,45 +2,47 @@ package main
 
 import (
 	"fmt"
-	"github.com/treeforest/gos/server"
+	"github.com/treeforest/gos/transport"
 )
 
 type PingRouter struct {
-	server.BaseRouter
-}
-
-// Test PreHandle
-func (r *PingRouter) PreHandle(req server.Request) {
-	fmt.Println("Call Router PreHandle...")
-	_, err := req.GetConnection().GetTCPConnection().Write([]byte("before ping..."))
-	if err != nil {
-		fmt.Println("call back before ping error:", err)
-	}
+	transport.BaseRouter
 }
 
 // Test Handle
-func (r *PingRouter) Handle(req server.Request) {
-	fmt.Println("Call Router Handle...")
-	_, err := req.GetConnection().GetTCPConnection().Write([]byte("ping..."))
+func (r *PingRouter) Handle(req transport.Request) {
+	fmt.Println("Call PingRouter Handle...")
+	// 读取客户端的数据
+	fmt.Printf("msgID=%d, data=%s\n", req.GetMsgID(), string(req.GetData()))
+
+	err := req.GetConnection().Send(200, []byte("ping...ping..."))
 	if err != nil {
 		fmt.Println("call back ping error:", err)
 	}
 }
 
-// Test PostHandle
-func (r *PingRouter) PostHandle(req server.Request) {
-	fmt.Println("Call Router PostHandle...")
-	_, err := req.GetConnection().GetTCPConnection().Write([]byte("after ping..."))
+type HelloRouter struct {
+	transport.BaseRouter
+}
+
+// Test Handle
+func (r *HelloRouter) Handle(req transport.Request) {
+	fmt.Println("Call HelloRouter Handle...")
+	// 读取客户端的数据
+	fmt.Printf("msgID=%d, data=%s\n", req.GetMsgID(), string(req.GetData()))
+
+	err := req.GetConnection().Send(201, []byte("Hello world..."))
 	if err != nil {
-		fmt.Println("call back after ping error:", err)
+		fmt.Println("call back ping error:", err)
 	}
 }
 
 func main() {
-	s := server.NewServer("[lsgo V0.1]")
+	s := transport.NewServer("[lsgo V0.1]")
 
 	// 添加router
-	s.RegisterRouter(&PingRouter{})
+	s.RegisterRouter(0, &PingRouter{})
+	s.RegisterRouter(1, &HelloRouter{})
 
 	s.Serve()
 }

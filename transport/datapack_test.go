@@ -1,4 +1,4 @@
-package server
+package transport
 
 import (
 	"testing"
@@ -15,7 +15,7 @@ func TestDataPack(t *testing.T) {
 	 */
 	listener, err := net.Listen("tcp", "127.0.0.1:7777")
 	if err != nil {
-		fmt.Println("server listen error:", err)
+		fmt.Println("transport listen error:", err)
 		return
 	}
 
@@ -23,7 +23,7 @@ func TestDataPack(t *testing.T) {
 		for  {
 			conn, err := listener.Accept()
 			if err != nil {
-				fmt.Println("server accept error", err)
+				fmt.Println("transport accept error", err)
 				continue
 			}
 
@@ -41,7 +41,7 @@ func TestDataPack(t *testing.T) {
 
 					msgHead, err := pack.Unpack(headData)
 					if err != nil {
-						fmt.Println("server unpack head error:", err)
+						fmt.Println("transport unpack head error:", err)
 						return
 					}
 
@@ -53,7 +53,7 @@ func TestDataPack(t *testing.T) {
 
 						_, err := io.ReadFull(conn, msg.data)
 						if err != nil {
-							fmt.Println("server unpack data error:", err)
+							fmt.Println("transport unpack data error:", err)
 						}
 
 						// 读取数据完毕
