@@ -3,8 +3,7 @@ package transport
 import (
 	"errors"
 	"fmt"
-	"github.com/treeforest/gos/utils"
-	"io"
+		"io"
 	"log"
 	"net"
 	"sync"
@@ -40,15 +39,14 @@ type connection struct {
 }
 
 func NewConnection(tcpServer Server, conn *net.TCPConn, connID uint32, msgHandler MessageHandler) Connection {
-	c := &connection{
-		tcpServer:  tcpServer,
-		conn:       conn,
-		connID:     connID,
-		closed:     false,
-		msgHandler: msgHandler,
-		existChan:  make(chan bool),
-		msgChan:    make(chan []byte),
-	}
+	c := GlobalConnectionPool.Get()
+	c.tcpServer = tcpServer
+	c.conn = conn
+	c.connID = connID
+	c.closed = false
+	c.msgHandler = msgHandler
+	c.existChan = make(chan bool)
+	c.msgChan = make(chan []byte)
 
 	// 将conn加入到connManager中
 	c.tcpServer.GetConnManager().Add(c)
@@ -79,8 +77,9 @@ func (c *connection) Stop() {
 	// 链接结束之前调用HOOK
 	c.tcpServer.CallOnConnStop(c)
 
-	// 关闭连接
-	c.conn.Close()
+	// 回收链接
+	//c.conn.Close()
+	GlobalTCPConnPool.Put(c.conn)
 
 	// 通知writer关闭
 	c.existChan <- true
@@ -91,6 +90,9 @@ func (c *connection) Stop() {
 	// 回收资源
 	close(c.existChan)
 	close(c.msgChan)
+
+	// 回收connection对象
+	GlobalConnectionPool.Put(c)
 }
 
 func (c *connection) GetTCPConnection() *net.TCPConn {
@@ -178,16 +180,16 @@ func (c *connection) startReader() {
 			msg.SetData(data)
 
 			// 读取数据完毕, 交路由器处理
-			req := NewRequest(c, msg)
+			// req := NewRequest(c, msg)
+			req := GlobalRequestPool.Get()
+			req.conn = c
+			req.msg = msg
 
-			// 进行消息处理
-			if utils.GlobalObject.WorkerPoolSize > 0 {
-				// 若开启了工作池
-				c.msgHandler.SendMsgToTaskQueue(req)
-			} else {
-				// 未开启工作池，直接一个协程进行处理
-				go c.msgHandler.HandleRequest(req)
-			}
+			// 交给Worker的任务队列
+			c.msgHandler.SendMsgToTaskQueue(req)
+
+			// 未开启工作池，直接一个协程进行处理
+			// go c.msgHandler.HandleRequest(req)
 		}
 	}
 }

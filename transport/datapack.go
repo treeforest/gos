@@ -22,13 +22,13 @@ func NewDataPack() DataPacker {
 }
 
 // 获取数据包长度
-func (p *dataPack) GetHeadLen() uint32 {
+func (p dataPack) GetHeadLen() uint32 {
 	// DataLen uint32 (4字节) + ID uint32 （4 字节）
 	return 8
 }
 
 // 封包方法
-func (p *dataPack) Pack(msg Message) ([]byte, error) {
+func (p dataPack) Pack(msg Message) ([]byte, error) {
 	dataBuff := bytes.NewBuffer([]byte{})
 
 	// 将数据包长度写入数据包
@@ -50,7 +50,7 @@ func (p *dataPack) Pack(msg Message) ([]byte, error) {
 }
 
 // 拆包方法
-func (p *dataPack) Unpack(binaryData []byte) (Message, error) {
+func (p dataPack) Unpack(binaryData []byte) (Message, error) {
 	dataBuff := bytes.NewReader(binaryData)
 
 	// 解压head信息，得到dataLen和messageID

@@ -39,6 +39,8 @@ func (h *messageHandle) HandleRequest(req Request) {
 	handler.PreHandle(req)
 	handler.Handle(req)
 	handler.PostHandle(req)
+
+	GlobalRequestPool.Put(req.(*request))
 }
 
 // 为消息添加具体的处理逻辑

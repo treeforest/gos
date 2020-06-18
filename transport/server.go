@@ -70,7 +70,9 @@ func (s *server) Start() {
 		var cid uint32 = 0 // 连接ID
 
 		for {
-			conn, err := listener.AcceptTCP()
+			conn := GlobalTCPConnPool.Get()
+
+			conn, err = listener.AcceptTCP()
 			if err != nil {
 				log.Printf("Accept tcp error: %v\n", err)
 				continue
@@ -80,7 +82,8 @@ func (s *server) Start() {
 			if s.connMgr.Len() >= utils.GlobalObject.MaxConn {
 				//TODO: 回执给客户端超出最大连接的错误包
 				log.Println("=====> Connection overflow!")
-				conn.Close()
+				//conn.Close()
+				GlobalTCPConnPool.Put(conn)
 				continue
 			}
 
