@@ -44,6 +44,10 @@ func (g *GlobalObj) Reload() {
 	if err != nil {
 		panic(err)
 	}
+
+	if GlobalObject.WorkerPoolSize <= 0 {
+		GlobalObject.WorkerPoolSize = 10
+	}
 }
 
 /*
