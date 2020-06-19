@@ -13,13 +13,14 @@ type PingRouter struct {
 func (r *PingRouter) Handle(req transport.Request) {
 	fmt.Println("Call PingRouter Handle...")
 	// 读取客户端的数据
-	fmt.Printf("msgID=%d, data=%s\n", req.GetMsgID(), string(req.GetData()))
+	fmt.Printf("msgID=%d, data=%s - %v\n", req.GetMsgID(), string(req.GetData()), req.GetData())
 
 	err := req.GetConnection().Send(200, []byte("ping...ping..."))
 	if err != nil {
 		fmt.Println("call back ping error:", err)
 	}
 }
+
 
 type HelloRouter struct {
 	transport.BaseRouter

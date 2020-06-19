@@ -4,5 +4,6 @@
   "TcpPort": 9999,
   "MaxConn": 2,
   "Version": "tcp4",
+  "MaxPackageSize": 4096,
   "WorkerPoolSize": 10
 }

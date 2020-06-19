@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/treeforest/gos/utils"
 	"sync"
+	"log"
 )
 
 // 封包、拆包的具体模块
@@ -68,6 +69,7 @@ func (p dataPack) Unpack(binaryData []byte) (Message, error) {
 
 	// 判断dataLen是否符合要求的最大包长度
 	if utils.GlobalObject.MaxPackageSize < msg.dataLen {
+		log.Printf("MaxPackageSize: %d , msg: %v\n", utils.GlobalObject.MaxPackageSize, msg)
 		return nil, errors.New("too large msg data recv!")
 	}
 
