@@ -2,7 +2,7 @@ package transport
 
 import (
 	"errors"
-	"log"
+	"github.com/treeforest/logger"
 	"sync"
 )
 
@@ -18,13 +18,13 @@ func NewConnManager() ConnManager {
 // 添加链接
 func (m *connManager) Add(conn Connection) {
 	m.connMap.Store(conn.GetConnID(), conn)
-	log.Printf("connID = %d add to ConnManager success: conn num = %d \n", conn.GetConnID(), m.Len())
+	log.Debugf("connID = %d add to ConnManager success: conn num = %d", conn.GetConnID(), m.Len())
 }
 
 // 删除链接
 func (m *connManager) Remove(conn Connection) {
 	m.connMap.Delete(conn.GetConnID())
-	log.Printf("connID = %d remove to ConnManager success: conn num = %d \n", conn.GetConnID(), m.Len())
+	log.Debugf("connID = %d remove to ConnManager success: conn num = %d", conn.GetConnID(), m.Len())
 }
 
 // 根据connID获取链接

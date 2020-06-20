@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/treeforest/gos/transport"
+	"github.com/treeforest/logger"
 )
 
 type PingRouter struct {
@@ -63,6 +64,8 @@ func OnConnStop(c transport.Connection) {
 }
 
 func main() {
+	log.SetFileLogger()
+
 	s := transport.NewServer("[lsgo V0.1]")
 
 	s.SetOnConnStartFunc(OnConnStart)

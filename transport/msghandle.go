@@ -3,7 +3,7 @@ package transport
 import (
 	"fmt"
 	"github.com/treeforest/gos/utils"
-	"log"
+	"github.com/treeforest/logger"
 )
 
 /*
@@ -11,7 +11,7 @@ import (
 */
 type messageHandle struct {
 	// 存放每个msgID所对应的处理方法
-	apis map[uint32]Router
+	routerMap map[uint32]Router
 
 	// 负责Worker取任务的消息队列
 	taskQueue []chan Request
@@ -22,7 +22,7 @@ type messageHandle struct {
 
 func NewMessageHandler() MessageHandler {
 	return &messageHandle{
-		apis:           make(map[uint32]Router),
+		routerMap:      make(map[uint32]Router),
 		taskQueue:      make([]chan Request, utils.GlobalObject.WorkerPoolSize),
 		workerPoolSize: utils.GlobalObject.WorkerPoolSize,
 	}
@@ -30,9 +30,9 @@ func NewMessageHandler() MessageHandler {
 
 // 调度/执行对应的Router消息处理方法
 func (h *messageHandle) HandleRequest(req Request) {
-	handler, ok := h.apis[req.GetMsgID()]
+	handler, ok := h.routerMap[req.GetMsgID()]
 	if !ok {
-		log.Printf("api msgID = %d is not found!\n", req.GetMsgID())
+		log.Errorf("HandleRequest msgID = %d is not found!", req.GetMsgID())
 		return
 	}
 
@@ -46,13 +46,13 @@ func (h *messageHandle) HandleRequest(req Request) {
 // 为消息添加具体的处理逻辑
 func (h *messageHandle) RegisterRouter(msgID uint32, router Router) {
 	//1 判断当前msgID
-	if _, ok := h.apis[msgID]; ok {
+	if _, ok := h.routerMap[msgID]; ok {
 		panic(fmt.Errorf("repeat router, msgID = %d", msgID))
 	}
 
 	//2 添加msgID与router的绑定
-	h.apis[msgID] = router
-	log.Printf("register router msgID = %d success.\n", msgID)
+	h.routerMap[msgID] = router
+	log.Infof("register router msgID = %d success!", msgID)
 }
 
 // 启动Worker Pool(该动作只能发生一次)
@@ -68,7 +68,7 @@ func (h *messageHandle) StartWorkerPool() {
 }
 
 func (h *messageHandle) startOneWorker(workerID uint32, task chan Request) {
-	fmt.Printf("WorkerID = %d is started.\n", workerID)
+	log.Debugf("Worker ID = %d is started!", workerID)
 
 	// 阻塞等待对应消息队列的信息
 	for {
@@ -85,7 +85,8 @@ func (h *messageHandle) SendMsgToTaskQueue(req Request) {
 	// 1、将消息平均分配给不同的worker
 	// 根据客户端连接的connID进行分配(轮询)
 	workerID := req.GetConnection().GetConnID() % h.workerPoolSize
-	log.Printf("Add ConnID = %d request msgID = %d to workerID = %d\n", req.GetConnection().GetConnID(), req.GetMsgID(), workerID)
+
+	log.Debugf("Add ConnID = %d request msgID = %d to workerID = %d\n", req.GetConnection().GetConnID(), req.GetMsgID(), workerID)
 
 	// 2、将消息发送给对应的worker的taskQueue即可
 	h.taskQueue[workerID] <- req

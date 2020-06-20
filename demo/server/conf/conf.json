@@ -1,8 +1,8 @@
 {
-  "Name": "Gos demoServerApp",
+  "Name": "Renju-ServerApp",
   "Host": "0.0.0.0",
   "TcpPort": 9999,
-  "MaxConn": 2,
+  "MaxConn": 20000,
   "Version": "tcp4",
   "MaxPackageSize": 4096,
   "WorkerPoolSize": 10

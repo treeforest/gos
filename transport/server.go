@@ -3,7 +3,7 @@ package transport
 import (
 	"fmt"
 	"github.com/treeforest/gos/utils"
-	"log"
+	"github.com/treeforest/logger"
 	"net"
 )
 
@@ -45,8 +45,8 @@ func (s *server) Serve() {
 }
 
 func (s *server) Start() {
-	log.Printf("[START] Server[%s] listenner at IP[%s:%d] is starting.\n", s.name, s.ip, s.port)
-	log.Printf("[START] Version:%s MaxConn:%d MaxPackageSize:%d\n",
+	log.Infof("START Server[%s] listener at IP[%s:%d] is starting...", s.name, s.ip, s.port)
+	log.Infof("START Version[%s] MaxConn[%d] MaxPackageSize[%d]",
 		utils.GlobalObject.Version, utils.GlobalObject.MaxConn, utils.GlobalObject.MaxPackageSize)
 
 	// 开启消息队列及工作池(WorkerPool)
@@ -66,7 +66,7 @@ func (s *server) Start() {
 			return
 		}
 
-		log.Printf("start transport %s success.\n", s.name)
+		log.Infof("START server[%s] success!!!\n", s.name)
 		var cid uint32 = 0 // 连接ID
 
 		for {
@@ -74,15 +74,15 @@ func (s *server) Start() {
 
 			conn, err = listener.AcceptTCP()
 			if err != nil {
-				log.Printf("Accept tcp error: %v\n", err)
+				log.Errorf("Accept TCP error: %v", err)
 				continue
 			}
 
 			// 判断已经连接的数量，若以达到最大连接数，则直接关闭连接
 			if s.connMgr.Len() >= utils.GlobalObject.MaxConn {
 				//TODO: 回执给客户端超出最大连接的错误包
-				log.Println("=====> Connection overflow!")
-				//conn.Close()
+
+				log.Warnf("Connection overflow!")
 				GlobalTCPConnPool.Put(conn)
 				continue
 			}
@@ -91,7 +91,7 @@ func (s *server) Start() {
 			dealConn := NewConnection(s, conn, cid, s.msgHandler)
 			cid++
 
-			log.Println("=====> [CONN] NowConn:", s.connMgr.Len(), " MaxConn:", utils.GlobalObject.MaxConn)
+			log.Debugf("New connection ConnCount:%d MaxConn:%d ", s.connMgr.Len(), utils.GlobalObject.MaxConn)
 
 			// 启动当前的链接业务处理
 			go dealConn.Start()
@@ -101,7 +101,7 @@ func (s *server) Start() {
 
 func (s *server) Stop() {
 	s.connMgr.ClearAllConn()
-	log.Printf("[STOP] server name %s\n", s.name)
+	log.Infof("STOP server[%s]\n", s.name)
 }
 
 func (s *server) RegisterRouter(msgID uint32, router Router) {

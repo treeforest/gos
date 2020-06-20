@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-)
+	)
 
 /*
 	存储一切有关 gos 框架的全局参数，供其他模块使用
@@ -56,7 +56,7 @@ func (g *GlobalObj) Reload() {
 func init() {
 	// 默认值
 	GlobalObject = &GlobalObj{
-		Name:             "GosServerApp",
+		Name:             "Renju-ServerApp",
 		Version:          "V1.0",
 		TcpPort:          9999,
 		Host:             "0.0.0.0",

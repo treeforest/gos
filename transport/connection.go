@@ -3,8 +3,8 @@ package transport
 import (
 	"errors"
 	"fmt"
-		"io"
-	"log"
+	"io"
+	"github.com/treeforest/logger"
 	"net"
 	"sync"
 )
@@ -55,7 +55,7 @@ func NewConnection(tcpServer Server, conn *net.TCPConn, connID uint32, msgHandle
 }
 
 func (c *connection) Start() {
-	log.Printf("[Conn Start] ConnID = %d\n", c.connID)
+	log.Debugf("[Conn Start] ConnID = %d", c.connID)
 
 	// 启动从当前链接读数据的业务
 	go c.startReader()
@@ -68,7 +68,7 @@ func (c *connection) Start() {
 }
 
 func (c *connection) Stop() {
-	log.Printf("[Conn Stop] ConnID = %d\n", c.connID)
+	log.Debugf("[Conn Stop] ConnID = %d\n", c.connID)
 	if c.closed {
 		return
 	}
@@ -144,9 +144,9 @@ func (c *connection) RemoveProperty(key string) {
 	读消息的goroutine
 */
 func (c *connection) startReader() {
-	log.Println("[Reader goroutine is running]")
+	log.Debugf("Reader connID=%d goroutine is running", c.connID)
 	defer func() {
-		log.Printf("[Reader is exit!] connID=%d\n", c.connID)
+		log.Debugf("Reader is exit! connID=%d", c.connID)
 		c.Stop()
 	}()
 
@@ -157,13 +157,13 @@ func (c *connection) startReader() {
 		headData := make([]byte, pack.GetHeadLen())
 		_, err := io.ReadFull(c.GetTCPConnection(), headData)
 		if err != nil {
-			log.Printf("read head error: %v\n", err)
+			log.Errorf("read head data error: %v", err)
 			break
 		}
 
 		msg, err := pack.Unpack(headData)
 		if err != nil {
-			log.Printf("transport unpack head error: %v\n", err)
+			log.Errorf("unpack head data error: %v", err)
 			break
 		}
 
@@ -173,7 +173,7 @@ func (c *connection) startReader() {
 			data := make([]byte, msg.GetLen())
 
 			if _, err := io.ReadFull(c.GetTCPConnection(), data); err != nil {
-				log.Printf("transport unpack data error: %v\n", err)
+				log.Errorf("unpack message data error: %v", err)
 				break
 			}
 
@@ -198,9 +198,9 @@ func (c *connection) startReader() {
 	写消息的goroutine
 */
 func (c *connection) startWriter() {
-	log.Println("[Writer goroutine is running]")
+	log.Debugf("Writer connID goroutine is running", c.connID)
 	defer func() {
-		log.Printf("[Writer is exit!] connID=%d\n", c.connID)
+		log.Debugf("Writer is exit! connID=%d", c.connID)
 	}()
 
 	// 阻塞等待channel的消息，进行写给客户端
@@ -209,7 +209,7 @@ func (c *connection) startWriter() {
 		case data := <-c.msgChan:
 			// 有写数据
 			if _, err := c.conn.Write(data); err != nil {
-				log.Printf("Send data error: %v\n", err)
+				log.Errorf("Send data error: %v", err)
 				return
 			}
 		case <-c.existChan:
