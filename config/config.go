@@ -6,6 +6,8 @@ import (
 	"github.com/treeforest/gos/utils/config/source/file"
 	"github.com/treeforest/gos/utils/config/encoder/yaml"
 	"github.com/treeforest/gos/utils/config/source"
+	"os"
+	"path/filepath"
 )
 
 /*
@@ -34,9 +36,12 @@ func (c *serverConfig) load() {
 		log.Errorf("New config  error: %v ", err)
 	}
 
+	// 配置文件路径
+	path := filepath.Join(os.Getenv("GoPath"), "src", "github.com", "treeforest", "gos", "config", "config.yaml")
+
 	e := yaml.NewEncoder()
 	if err = conf.Load(file.NewSource(
-		file.WithPath("./config.yaml"),
+		file.WithPath(path),
 		source.WithEncoder(e),
 	)); err != nil {
 		log.Errorf("config load error: %v", err)
