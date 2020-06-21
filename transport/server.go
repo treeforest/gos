@@ -5,6 +5,7 @@ import (
 	"github.com/treeforest/logger"
 	"net"
 	"github.com/treeforest/gos/config"
+	"sync"
 )
 
 // 定义一个Server服务器模块
@@ -139,13 +140,18 @@ func (s *server) CallOnConnStop(c Connection) {
 /*
 	初始化Server
 */
+var server_once sync.Once
+var global_server *server
 func NewServer(serverName string) Server {
-	return &server{
-		name:       config.ServerConfig.Name,
-		tcpVersion: "tcp4",
-		ip:         config.ServerConfig.Host,
-		port:       config.ServerConfig.TcpPort,
-		msgHandler: NewMessageHandler(),
-		connMgr:    NewConnManager(),
-	}
+	server_once.Do(func() {
+		global_server = &server{
+			name:       config.ServerConfig.Name,
+			tcpVersion: "tcp4",
+			ip:         config.ServerConfig.Host,
+			port:       config.ServerConfig.TcpPort,
+			msgHandler: NewMessageHandler(),
+			connMgr:    NewConnManager(),
+		}
+	})
+	return global_server
 }
