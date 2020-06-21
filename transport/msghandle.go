@@ -2,8 +2,8 @@ package transport
 
 import (
 	"fmt"
-	"github.com/treeforest/gos/utils"
 	"github.com/treeforest/logger"
+	"github.com/treeforest/gos/config"
 )
 
 /*
@@ -23,8 +23,8 @@ type messageHandle struct {
 func NewMessageHandler() MessageHandler {
 	return &messageHandle{
 		routerMap:      make(map[uint32]Router),
-		taskQueue:      make([]chan Request, utils.GlobalObject.WorkerPoolSize),
-		workerPoolSize: utils.GlobalObject.WorkerPoolSize,
+		taskQueue:      make([]chan Request, config.ServerConfig.WorkerPoolSize),
+		workerPoolSize: config.ServerConfig.WorkerPoolSize,
 	}
 }
 
@@ -61,7 +61,7 @@ func (h *messageHandle) StartWorkerPool() {
 	var i uint32
 	for i = 0; i < h.workerPoolSize; i++ {
 		// 初始化一个worker
-		h.taskQueue[i] = make(chan Request, utils.GlobalObject.MaxWorkerTaskLen)
+		h.taskQueue[i] = make(chan Request, config.ServerConfig.MaxWorkerTaskLen)
 		// 启动当前worker， 阻塞等待消息从channel传递过来
 		go h.startOneWorker(i, h.taskQueue[i])
 	}

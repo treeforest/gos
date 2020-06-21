@@ -2,9 +2,9 @@ package transport
 
 import (
 	"fmt"
-	"github.com/treeforest/gos/utils"
 	"github.com/treeforest/logger"
 	"net"
+	"github.com/treeforest/gos/config"
 )
 
 // 定义一个Server服务器模块
@@ -47,7 +47,7 @@ func (s *server) Serve() {
 func (s *server) Start() {
 	log.Infof("START Server[%s] listener at IP[%s:%d] is starting...", s.name, s.ip, s.port)
 	log.Infof("START Version[%s] MaxConn[%d] MaxPackageSize[%d]",
-		utils.GlobalObject.Version, utils.GlobalObject.MaxConn, utils.GlobalObject.MaxPackageSize)
+		config.ServerConfig.Version, config.ServerConfig.MaxConn, config.ServerConfig.MaxPackageSize)
 
 	// 开启消息队列及工作池(WorkerPool)
 	s.msgHandler.StartWorkerPool()
@@ -79,7 +79,7 @@ func (s *server) Start() {
 			}
 
 			// 判断已经连接的数量，若以达到最大连接数，则直接关闭连接
-			if s.connMgr.Len() >= utils.GlobalObject.MaxConn {
+			if s.connMgr.Len() >= config.ServerConfig.MaxConn {
 				//TODO: 回执给客户端超出最大连接的错误包
 
 				log.Warnf("Connection overflow!")
@@ -91,7 +91,7 @@ func (s *server) Start() {
 			dealConn := NewConnection(s, conn, cid, s.msgHandler)
 			cid++
 
-			log.Debugf("New connection ConnCount:%d MaxConn:%d ", s.connMgr.Len(), utils.GlobalObject.MaxConn)
+			log.Debugf("New connection ConnCount:%d MaxConn:%d ", s.connMgr.Len(), config.ServerConfig.MaxConn)
 
 			// 启动当前的链接业务处理
 			go dealConn.Start()
@@ -141,10 +141,10 @@ func (s *server) CallOnConnStop(c Connection) {
 */
 func NewServer(serverName string) Server {
 	return &server{
-		name:       utils.GlobalObject.Name,
+		name:       config.ServerConfig.Name,
 		tcpVersion: "tcp4",
-		ip:         utils.GlobalObject.Host,
-		port:       utils.GlobalObject.TcpPort,
+		ip:         config.ServerConfig.Host,
+		port:       config.ServerConfig.TcpPort,
 		msgHandler: NewMessageHandler(),
 		connMgr:    NewConnManager(),
 	}
