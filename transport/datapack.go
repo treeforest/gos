@@ -63,17 +63,20 @@ func (p dataPack) Unpack(binaryData []byte) (Message, error) {
 	msg := &message{}
 
 	// dataLen
-	if err := binary.Read(dataBuff, binary.LittleEndian, msg.GetLen()); err != nil {
+	if err := binary.Read(dataBuff, binary.LittleEndian, &msg.dataLen); err != nil {
+		log.Warnf("Unpack dataLen error.")
 		return nil, err
 	}
 
 	// serviceID
-	if err := binary.Read(dataBuff, binary.LittleEndian, msg.GetServiceID()); err != nil {
+	if err := binary.Read(dataBuff, binary.LittleEndian, &msg.serviceID); err != nil {
+		log.Warnf("Unpack serviceID error.")
 		return nil, err
 	}
 
 	// methodID
-	if err := binary.Read(dataBuff, binary.LittleEndian, msg.GetMethodID()); err != nil {
+	if err := binary.Read(dataBuff, binary.LittleEndian, &msg.methodID); err != nil {
+		log.Warnf("Unpack methodID error.")
 		return nil, err
 	}
 

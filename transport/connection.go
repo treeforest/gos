@@ -153,9 +153,10 @@ func (c *connection) startReader() {
 	}()
 
 	pack := NewDataPack()
-	headData := make([]byte, pack.GetHeadLen())
 
 	for {
+		headData := make([]byte, pack.GetHeadLen())
+
 		// 1、读取数据包头部数据
 		_, err := io.ReadFull(c.GetTCPConnection(), headData)
 		if err != nil {

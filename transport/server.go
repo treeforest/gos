@@ -68,7 +68,7 @@ func (s *server) Start() {
 		}
 
 		log.Infof("START server[%s] success!!!\n", s.name)
-		var cid uint32 = 0 // 连接ID
+		var cid uint32 = 1 // 连接ID
 
 		for {
 			conn := GlobalTCPConnPool.Get()

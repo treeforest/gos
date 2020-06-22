@@ -7,19 +7,53 @@ import (
 	"time"
 	"bytes"
 	"encoding/binary"
-	)
+	"encoding/json"
+)
+
+type SayRequest struct {
+	Name string `json:"Name"`
+}
+
+type PlayRequest struct {
+	Ball string `json:"Ball"`
+}
+
+type Response struct {
+	Res string `json:"Result"`
+}
+
+// 服务ID
+const CODE_HELLO = 101
+
+// 服务方法对应的ID
+const (
+	EVENT_SAY = iota
+	EVENT_PLAY
+)
 
 func main() {
-	fmt.Println("client0 start...")
+	fmt.Println("client start...")
 
 	conn, err := net.Dial("tcp", "127.0.0.1:9999")
 	if err != nil {
 		panic(fmt.Errorf("dial error: %v", err))
 	}
 
+	var ok bool = true
 	for {
-		// 对消息封包
-		binaryMsg, _ := Pack(NewMessage(0, []byte("Hello World!")))
+		var binaryMsg []byte
+		if ok {
+			r := SayRequest{}
+			r.Name = "Tony"
+			data, _ := json.Marshal(r)
+			binaryMsg, _ = Pack(NewMessage(CODE_HELLO, EVENT_SAY, data))// 对消息封包
+		} else {
+			r := PlayRequest{}
+			r.Ball = "badminton"
+			data, _ := json.Marshal(r)
+			binaryMsg, _ = Pack(NewMessage(CODE_HELLO, EVENT_PLAY, data))// 对消息封包
+		}
+		ok = !ok
 
 		_, err := conn.Write(binaryMsg)
 		if err != nil {
@@ -27,7 +61,7 @@ func main() {
 			break
 		}
 
-		headData := make([]byte, 8)
+		headData := make([]byte, 12)
 		_, err = io.ReadFull(conn, headData)
 		if err != nil {
 			fmt.Println("read head error")
@@ -52,8 +86,11 @@ func main() {
 
 			msg.SetData(data)
 
+			resp := &Response{}
+			json.Unmarshal(data, resp)
+
 			// 读取数据完毕
-			fmt.Println("--->Recv MsgID:", msg.msgID, ", dataLen:", msg.dataLen, ", data:", string(msg.data))
+			fmt.Println("--->Recv serviceID:", msg.serviceID, " methodID:", msg.methodID, ", dataLen:", msg.dataLen, ", resp:", resp)
 		}
 
 		time.Sleep(time.Second * 4)
@@ -61,20 +98,22 @@ func main() {
 }
 
 type message struct {
-	msgID   uint32 //消息ID
-	dataLen uint32 // 消息长度
-	data    []byte //消息内容
+	dataLen   uint32 // 消息长度
+	serviceID uint32 // 服务ID
+	methodID  uint32 // 方法ID
+	data      []byte // 消息内容
 }
 
 func (m *message) SetData(data []byte) {
 	m.data = data
 }
 
-func NewMessage(msgID uint32, data []byte) *message {
+func NewMessage(serviceID, methodID uint32, data []byte) *message {
 	return &message{
-		msgID:msgID,
-		dataLen:uint32(len(data)),
-		data:data,
+		dataLen:   uint32(len(data)),
+		serviceID: serviceID,
+		methodID:  methodID,
+		data:      data,
 	}
 }
 
@@ -86,8 +125,13 @@ func Pack(msg *message) ([]byte, error) {
 		return nil, err
 	}
 
-	// 将消息ID写入数据包
-	if err := binary.Write(dataBuff, binary.LittleEndian, msg.msgID); err != nil {
+	// 将服务ID写入数据包
+	if err := binary.Write(dataBuff, binary.LittleEndian, msg.serviceID); err != nil {
+		return nil, err
+	}
+
+	// 将方法ID写入数据包
+	if err := binary.Write(dataBuff, binary.LittleEndian, msg.methodID); err != nil {
 		return nil, err
 	}
 
@@ -110,8 +154,13 @@ func Unpack(binaryData []byte) (*message, error) {
 		return nil, err
 	}
 
-	// messageID
-	if err := binary.Read(dataBuff, binary.LittleEndian, &msg.msgID); err != nil {
+	// serviceID
+	if err := binary.Read(dataBuff, binary.LittleEndian, &msg.serviceID); err != nil {
+		return nil, err
+	}
+
+	// methodID
+	if err := binary.Read(dataBuff, binary.LittleEndian, &msg.methodID); err != nil {
 		return nil, err
 	}
 

@@ -24,7 +24,7 @@ type Logic struct {}
 
 // Test Handle
 func (l *Logic) Say(req *SayRequest) *Response{
-	fmt.Println("Name: ", req.Name)
+	log.Debug("Name: ", req.Name)
 
 	resp := new(Response)
 	resp.Res = fmt.Sprintf("Hello %s.", req.Name)
@@ -32,7 +32,7 @@ func (l *Logic) Say(req *SayRequest) *Response{
 }
 
 func (l *Logic) Play(req *PlayRequest) *Response {
-	fmt.Println("Ball: ", req.Ball)
+	log.Debug("Ball: ", req.Ball)
 
 	resp := new(Response)
 	resp.Res = fmt.Sprintf("Play %s.", req.Ball)
@@ -63,11 +63,11 @@ func (r *HelloRouter) PreHandle(req transport.Request) {
 // Test Handle
 func (r *HelloRouter) Handle(req transport.Request) {
 	// 读取客户端的数据
-	fmt.Printf("serviceID=%d, methodID=%d, data=%s\n", req.GetServiceID(), req.GetMethodID(), string(req.GetData()))
-	var resp *Response
+	log.Debug("serviceID=%d, methodID=%d, data=%s\n", req.GetServiceID(), req.GetMethodID(), string(req.GetData()))
 
 	switch req.GetMethodID() {
 	case EVENT_SAY:
+		var resp *Response
 		sayReq := &SayRequest{}
 
 		if err := json.Unmarshal(req.GetData(), sayReq); err != nil {
@@ -80,13 +80,17 @@ func (r *HelloRouter) Handle(req transport.Request) {
 
 		data, _ := json.Marshal(resp)
 		req.GetConnection().Send(req.GetServiceID(), req.GetMethodID(), data)
+
 	case EVENT_PLAY:
+		var resp *Response
 		playReq := &PlayRequest{}
 
 		if err := json.Unmarshal(req.GetData(), playReq); err != nil {
 			log.Error("PlayRequest unmarshal error: ", err)
 			resp = new(Response)
 			resp.Res = "PlayRequest unmarshal error."
+		} else {
+			resp = m_handle.Play(playReq)
 		}
 
 		data, _ := json.Marshal(resp)

@@ -86,7 +86,7 @@ func (h *messageHandle) SendMsgToTaskQueue(req Request) {
 	// 根据客户端连接的connID进行分配(轮询)
 	workerID := req.GetConnection().GetConnID() % h.workerPoolSize
 
-	log.Debugf("Add ConnID = %d serviceID = %d to workerID = %d", req.GetConnection().GetConnID(), req.GetServiceID(), workerID)
+	// log.Debugf("Add ConnID = %d serviceID = %d to workerID = %d", req.GetConnection().GetConnID(), req.GetServiceID(), workerID)
 
 	// 2、将消息发送给对应的worker的taskQueue即可
 	h.taskQueue[workerID] <- req
