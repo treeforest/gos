@@ -16,7 +16,7 @@ type Server interface {
 	Serve()
 
 	// 给当前的服务注册路由
-	RegisterRouter(msgID uint32, router Router)
+	RegisterRouter(serviceID uint32, router Router)
 
 	// 获取当前的链接管理器
 	GetConnManager() ConnManager
@@ -54,7 +54,7 @@ type Connection interface {
 	RemoteAddr() net.Addr
 
 	// 发送数据，将数据发送给远程的客户端
-	Send(msgID uint32, data []byte) error
+	Send(serviceID, methodID uint32, data []byte) error
 
 	// 设置链接属性
 	SetProperty(key string, value interface{})
@@ -80,8 +80,11 @@ type Request interface {
 	// 得到请求的消息数据
 	GetData() []byte
 
-	// 得到当前请求的消息ID
-	GetMsgID() uint32
+	// 得到当前请求的服务ID
+	GetServiceID() uint32
+
+	// 得到当前请求的服务方法ID
+	GetMethodID() uint32
 }
 
 /*
@@ -102,20 +105,26 @@ type Router interface {
  将请求的消息封装到一个Message中，定义抽象的接口
 */
 type Message interface {
-	// 获取消息的ID
-	GetID() uint32
-
 	// 获取消息的长度
 	GetLen() uint32
+
+	// 获取服务的ID
+	GetServiceID() uint32
+
+	// 获取对应服务的方法ID
+	GetMethodID() uint32
 
 	//获取消息的内容
 	GetData() []byte
 
-	// 设置消息ID
-	SetID(uint32)
-
 	//设置消息的长度
 	SetLen(uint32)
+
+	// 设置服务ID
+	SetServiceID(uint32)
+
+	// 设置服务中对应方法的ID
+	SetMethodID(uint32)
 
 	// 设置消息的内容
 	SetData([]byte)

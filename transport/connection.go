@@ -68,7 +68,7 @@ func (c *connection) Start() {
 }
 
 func (c *connection) Stop() {
-	log.Debugf("[Conn Stop] ConnID = %d\n", c.connID)
+	log.Debugf("[Conn Stop] ConnID = %d", c.connID)
 	if c.closed {
 		return
 	}
@@ -93,6 +93,8 @@ func (c *connection) Stop() {
 
 	// 回收connection对象
 	GlobalConnectionPool.Put(c)
+
+	fmt.Println()
 }
 
 func (c *connection) GetTCPConnection() *net.TCPConn {
@@ -107,14 +109,14 @@ func (c *connection) RemoteAddr() net.Addr {
 	return c.conn.RemoteAddr()
 }
 
-func (c *connection) Send(msgID uint32, data []byte) error {
+func (c *connection) Send(serviceID, methodID uint32, data []byte) error {
 	if c.closed {
 		return errors.New("Send error: connection closed when send message.")
 	}
 
 	// 封包处理
 	pack := NewDataPack()
-	binaryMsg, err := pack.Pack(NewMessage(msgID, data))
+	binaryMsg, err := pack.Pack(NewMessage(serviceID, methodID , data))
 	if err != nil {
 		return fmt.Errorf("Send error: pack failed, %v", err)
 	}
@@ -150,17 +152,18 @@ func (c *connection) startReader() {
 		c.Stop()
 	}()
 
-	for {
-		// 1、将包的head读出来
-		pack := NewDataPack()
+	pack := NewDataPack()
+	headData := make([]byte, pack.GetHeadLen())
 
-		headData := make([]byte, pack.GetHeadLen())
+	for {
+		// 1、读取数据包头部数据
 		_, err := io.ReadFull(c.GetTCPConnection(), headData)
 		if err != nil {
 			log.Errorf("read head data error: %v", err)
 			break
 		}
 
+		// 2、解析消息头部数据
 		msg, err := pack.Unpack(headData)
 		if err != nil {
 			log.Errorf("unpack head data error: %v", err)
@@ -169,7 +172,7 @@ func (c *connection) startReader() {
 
 		if msg.GetLen() > 0 {
 			// msg 有数据
-			// 2、根据dataLen将data读出来
+			// 3、根据dataLen将data读出来
 			data := make([]byte, msg.GetLen())
 
 			if _, err := io.ReadFull(c.GetTCPConnection(), data); err != nil {
@@ -198,7 +201,7 @@ func (c *connection) startReader() {
 	写消息的goroutine
 */
 func (c *connection) startWriter() {
-	log.Debugf("Writer connID goroutine is running", c.connID)
+	log.Debugf("Writer connID=%d goroutine is running", c.connID)
 	defer func() {
 		log.Debugf("Writer is exit! connID=%d", c.connID)
 	}()

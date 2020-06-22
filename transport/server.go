@@ -105,8 +105,8 @@ func (s *server) Stop() {
 	log.Infof("STOP server[%s]\n", s.name)
 }
 
-func (s *server) RegisterRouter(msgID uint32, router Router) {
-	s.msgHandler.RegisterRouter(msgID, router)
+func (s *server) RegisterRouter(serviceID uint32, router Router) {
+	s.msgHandler.RegisterRouter(serviceID, router)
 }
 
 func (s *server) GetConnManager() ConnManager {
@@ -130,7 +130,7 @@ func (s *server) CallOnConnStart(c Connection) {
 	}
 }
 
-// 在Server销毁链接之前之后调用
+// 在Server销毁链接之后调用
 func (s *server) CallOnConnStop(c Connection) {
 	if s.onConnStop != nil {
 		s.onConnStop(c)

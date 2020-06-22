@@ -25,6 +25,12 @@ func (r *request) GetData() []byte {
 	return r.msg.GetData()
 }
 
-func (r *request) GetMsgID() uint32 {
-	return r.msg.GetID()
+// 得到请求的服务ID
+func (r *request) GetServiceID() uint32 {
+	return r.msg.GetServiceID()
+}
+
+// 得到请求的服务接口ID
+func (r *request) GetMethodID() uint32 {
+	return r.msg.GetMethodID()
 }

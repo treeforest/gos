@@ -4,63 +4,106 @@ import (
 	"fmt"
 	"github.com/treeforest/gos/transport"
 	"github.com/treeforest/logger"
-)
+	"encoding/json"
+	)
 
-type PingRouter struct {
-	transport.BaseRouter
+type SayRequest struct {
+	Name string `json:"Name"`
 }
+
+type PlayRequest struct {
+	Ball string `json:"Ball"`
+}
+
+type Response struct {
+	Res string `json:"Result"`
+}
+
+// 逻辑实现
+type Logic struct {}
 
 // Test Handle
-func (r *PingRouter) Handle(req transport.Request) {
-	fmt.Println("Call PingRouter Handle...")
-	// 读取客户端的数据
-	fmt.Printf("msgID=%d, data=%s - %v\n", req.GetMsgID(), string(req.GetData()), req.GetData())
+func (l *Logic) Say(req *SayRequest) *Response{
+	fmt.Println("Name: ", req.Name)
 
-	err := req.GetConnection().Send(200, []byte("ping...ping..."))
-	if err != nil {
-		fmt.Println("call back ping error:", err)
-	}
+	resp := new(Response)
+	resp.Res = fmt.Sprintf("Hello %s.", req.Name)
+	return resp
 }
 
+func (l *Logic) Play(req *PlayRequest) *Response {
+	fmt.Println("Ball: ", req.Ball)
 
+	resp := new(Response)
+	resp.Res = fmt.Sprintf("Play %s.", req.Ball)
+	return resp
+}
+
+// 服务ID
+const CODE_HELLO = 101
+
+// 服务方法对应的ID
+const (
+	EVENT_SAY = iota
+	EVENT_PLAY
+)
+
+// 实例句柄
+var m_handle = &Logic{}
+
+// 路由实现
 type HelloRouter struct {
 	transport.BaseRouter
 }
 
+func (r *HelloRouter) PreHandle(req transport.Request) {
+	log.Debug("PreHandle")
+}
+
 // Test Handle
 func (r *HelloRouter) Handle(req transport.Request) {
-	fmt.Println("Call HelloRouter Handle...")
 	// 读取客户端的数据
-	fmt.Printf("msgID=%d, data=%s\n", req.GetMsgID(), string(req.GetData()))
+	fmt.Printf("serviceID=%d, methodID=%d, data=%s\n", req.GetServiceID(), req.GetMethodID(), string(req.GetData()))
+	var resp *Response
 
-	err := req.GetConnection().Send(201, []byte("Hello world..."))
-	if err != nil {
-		fmt.Println("call back ping error:", err)
+	switch req.GetMethodID() {
+	case EVENT_SAY:
+		sayReq := &SayRequest{}
+
+		if err := json.Unmarshal(req.GetData(), sayReq); err != nil {
+			log.Error("Say request unmarshal error: ", err)
+			resp = new(Response)
+			resp.Res = "SayRequest unmarshal error."
+		} else {
+			resp = m_handle.Say(sayReq)
+		}
+
+		data, _ := json.Marshal(resp)
+		req.GetConnection().Send(req.GetServiceID(), req.GetMethodID(), data)
+	case EVENT_PLAY:
+		playReq := &PlayRequest{}
+
+		if err := json.Unmarshal(req.GetData(), playReq); err != nil {
+			log.Error("PlayRequest unmarshal error: ", err)
+			resp = new(Response)
+			resp.Res = "PlayRequest unmarshal error."
+		}
+
+		data, _ := json.Marshal(resp)
+		req.GetConnection().Send(req.GetServiceID(), req.GetMethodID(), data)
 	}
+}
+
+func (r *HelloRouter) PostHandle(req transport.Request) {
+	log.Debug("PostHandle")
 }
 
 func OnConnStart(c transport.Connection) {
-	fmt.Println("==> OnConnStart")
-	if err := c.Send(202, []byte("OnConnStart Begin.")); err != nil {
-		fmt.Println(err)
-	}
-
-	// 设置一些链接属性
-	c.SetProperty("Name", "treeforest")
-	c.SetProperty("Home", "github.com/treeforest")
+	log.Debug("OnConnStart")
 }
 
 func OnConnStop(c transport.Connection) {
-	fmt.Println("==> OnConnStop")
-	if err := c.Send(202, []byte("OnConnStop End.")); err != nil {
-		fmt.Println(err)
-	}
-
-	// 获取链接属性
-	v, _ := c.GetProperty("Name")
-	fmt.Printf("Name = %s\n", v.(string))
-	v, _ = c.GetProperty("Home")
-	fmt.Printf("Name = %s\n", v.(string))
+	log.Debug("OnConnStop")
 }
 
 func main() {
@@ -72,8 +115,7 @@ func main() {
 	s.SetOnConnStopFunc(OnConnStop)
 
 	// 添加router
-	s.RegisterRouter(0, &PingRouter{})
-	s.RegisterRouter(1, &HelloRouter{})
+	s.RegisterRouter(CODE_HELLO, &HelloRouter{})
 
 	s.Serve()
 }

@@ -30,9 +30,9 @@ func NewMessageHandler() MessageHandler {
 
 // 调度/执行对应的Router消息处理方法
 func (h *messageHandle) HandleRequest(req Request) {
-	handler, ok := h.routerMap[req.GetMsgID()]
+	handler, ok := h.routerMap[req.GetServiceID()]
 	if !ok {
-		log.Errorf("HandleRequest msgID = %d is not found!", req.GetMsgID())
+		log.Errorf("HandleRequest serviceID = %d is not found!", req.GetServiceID())
 		return
 	}
 
@@ -44,15 +44,15 @@ func (h *messageHandle) HandleRequest(req Request) {
 }
 
 // 为消息添加具体的处理逻辑
-func (h *messageHandle) RegisterRouter(msgID uint32, router Router) {
+func (h *messageHandle) RegisterRouter(serviceID uint32, router Router) {
 	//1 判断当前msgID
-	if _, ok := h.routerMap[msgID]; ok {
-		panic(fmt.Errorf("repeat router, msgID = %d", msgID))
+	if _, ok := h.routerMap[serviceID]; ok {
+		panic(fmt.Errorf("repeat router, serviceID = %d", serviceID))
 	}
 
 	//2 添加msgID与router的绑定
-	h.routerMap[msgID] = router
-	log.Infof("register router msgID = %d success!", msgID)
+	h.routerMap[serviceID] = router
+	log.Infof("register router serviceID = %d success!", serviceID)
 }
 
 // 启动Worker Pool(该动作只能发生一次)
@@ -86,7 +86,7 @@ func (h *messageHandle) SendMsgToTaskQueue(req Request) {
 	// 根据客户端连接的connID进行分配(轮询)
 	workerID := req.GetConnection().GetConnID() % h.workerPoolSize
 
-	log.Debugf("Add ConnID = %d request msgID = %d to workerID = %d\n", req.GetConnection().GetConnID(), req.GetMsgID(), workerID)
+	log.Debugf("Add ConnID = %d serviceID = %d to workerID = %d", req.GetConnection().GetConnID(), req.GetServiceID(), workerID)
 
 	// 2、将消息发送给对应的worker的taskQueue即可
 	h.taskQueue[workerID] <- req

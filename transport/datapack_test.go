@@ -57,7 +57,7 @@ func TestDataPack(t *testing.T) {
 						}
 
 						// 读取数据完毕
-						fmt.Println("--->Recv MsgID:", msg.msgID, ", dataLen:", msg.dataLen, ", data:", string(msg.data))
+						fmt.Println("--->Recv serviceID:", msg.serviceID, ", methodID:", msg.methodID,", dataLen:", msg.dataLen, ", data:", string(msg.data))
 					}
 				}
 			}(conn)
@@ -78,9 +78,10 @@ func TestDataPack(t *testing.T) {
 
 	// 模拟粘包过程,封装两个msg一同发送
 	msg1 := &message{
-		msgID:   1,
-		dataLen: 5,
-		data:    []byte{'h', 'e', 'l', 'l', 'o'},
+		serviceID: 1,
+		methodID:  2,
+		dataLen:   5,
+		data:      []byte{'h', 'e', 'l', 'l', 'o'},
 	}
 	data, err := pack.Pack(msg1)
 	if err != nil {
@@ -89,9 +90,10 @@ func TestDataPack(t *testing.T) {
 	}
 
 	msg2 := &message{
-		msgID:   2,
-		dataLen: 5,
-		data:    []byte{'w', 'o', 'r', 'l', 'd'},
+		serviceID: 2,
+		methodID:  12,
+		dataLen:   5,
+		data:      []byte{'w', 'o', 'r', 'l', 'd'},
 	}
 	data2, err := pack.Pack(msg2)
 	if err != nil {
