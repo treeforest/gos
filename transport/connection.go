@@ -160,7 +160,7 @@ func (c *connection) startReader() {
 		// 1、读取数据包头部数据
 		_, err := io.ReadFull(c.GetTCPConnection(), headData)
 		if err != nil {
-			log.Errorf("read head data error: %v", err)
+			log.Warnf("read head data error: %v", err)
 			break
 		}
 
@@ -190,7 +190,7 @@ func (c *connection) startReader() {
 			req.msg = msg
 
 			// 交给Worker的任务队列
-			c.msgHandler.SendMsgToTaskQueue(req)
+			c.msgHandler.EntryTaskToWorkerPool(req)
 
 			// 未开启工作池，直接一个协程进行处理
 			// go c.msgHandler.HandleRequest(req)
@@ -213,7 +213,7 @@ func (c *connection) startWriter() {
 		case data := <-c.msgChan:
 			// 有写数据
 			if _, err := c.conn.Write(data); err != nil {
-				log.Errorf("Send data error: %v", err)
+				log.Warnf("Send data error: %v", err)
 				return
 			}
 		case <-c.existChan:

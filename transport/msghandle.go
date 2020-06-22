@@ -13,8 +13,8 @@ type messageHandle struct {
 	// 存放每个msgID所对应的处理方法
 	routerMap map[uint32]Router
 
-	// 负责Worker取任务的消息队列
-	taskQueue []chan Request
+	// 工作池的消息队列
+	taskChan  chan Request
 
 	// 业务工作Worker池的Worker数量
 	workerPoolSize uint32
@@ -23,7 +23,7 @@ type messageHandle struct {
 func NewMessageHandler() MessageHandler {
 	return &messageHandle{
 		routerMap:      make(map[uint32]Router),
-		taskQueue:      make([]chan Request, config.ServerConfig.WorkerPoolSize),
+		taskChan:       make(chan Request, config.ServerConfig.WorkerPoolSize),
 		workerPoolSize: config.ServerConfig.WorkerPoolSize,
 	}
 }
@@ -40,6 +40,7 @@ func (h *messageHandle) HandleRequest(req Request) {
 	handler.Handle(req)
 	handler.PostHandle(req)
 
+	// 回收对象资源
 	GlobalRequestPool.Put(req.(*request))
 }
 
@@ -60,34 +61,30 @@ func (h *messageHandle) StartWorkerPool() {
 	// 根据 h.workerPoolSize 分别开启Worker
 	var i uint32
 	for i = 0; i < h.workerPoolSize; i++ {
-		// 初始化一个worker
-		h.taskQueue[i] = make(chan Request, config.ServerConfig.MaxWorkerTaskLen)
-		// 启动当前worker， 阻塞等待消息从channel传递过来
-		go h.startOneWorker(i, h.taskQueue[i])
+		// 启动一个worker， 阻塞等待消息从channel传递过来
+		go h.startOneWorker(i)
 	}
 }
 
-func (h *messageHandle) startOneWorker(workerID uint32, task chan Request) {
+func (h *messageHandle) startOneWorker(workerID uint32) {
 	log.Debugf("Worker ID = %d is started!", workerID)
 
-	// 阻塞等待对应消息队列的信息
+	// 阻塞等待对应消息队列的任务
 	for {
 		select {
-		// 有消息到来，出列一个客户端消息
-		case req := <-task:
+		// 取一个任务就行处理
+		case req := <-h.taskChan:
+			// TODO：根据优先级处理相关信息
+			// log.Infof("Worker ID:%d", workerID)
 			h.HandleRequest(req)
 		}
 	}
 }
 
-// 将消息交给taskQueue,由worker处理
-func (h *messageHandle) SendMsgToTaskQueue(req Request) {
-	// 1、将消息平均分配给不同的worker
-	// 根据客户端连接的connID进行分配(轮询)
-	workerID := req.GetConnection().GetConnID() % h.workerPoolSize
-
+// 将执行的任务交给工作池处理
+func (h *messageHandle) EntryTaskToWorkerPool(req Request) {
 	// log.Debugf("Add ConnID = %d serviceID = %d to workerID = %d", req.GetConnection().GetConnID(), req.GetServiceID(), workerID)
 
-	// 2、将消息发送给对应的worker的taskQueue即可
-	h.taskQueue[workerID] <- req
+	// 将消息发送给worker的任务队列即可
+	h.taskChan <- req
 }

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"time"
-	"bytes"
+		"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"time"
 )
 
 type SayRequest struct {
@@ -40,7 +40,10 @@ func main() {
 	}
 
 	var ok bool = true
+	var cnt int = 0
+
 	for {
+		cnt++
 		var binaryMsg []byte
 		if ok {
 			r := SayRequest{}
@@ -90,7 +93,7 @@ func main() {
 			json.Unmarshal(data, resp)
 
 			// 读取数据完毕
-			fmt.Println("--->Recv serviceID:", msg.serviceID, " methodID:", msg.methodID, ", dataLen:", msg.dataLen, ", resp:", resp)
+			fmt.Println(cnt, "--->Recv serviceID:", msg.serviceID, " methodID:", msg.methodID, ", dataLen:", msg.dataLen, ", resp:", resp)
 		}
 
 		time.Sleep(time.Second * 4)

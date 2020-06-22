@@ -24,7 +24,7 @@ type Logic struct {}
 
 // Test Handle
 func (l *Logic) Say(req *SayRequest) *Response{
-	log.Debug("Name: ", req.Name)
+	log.Debugf("Name: %s", req.Name)
 
 	resp := new(Response)
 	resp.Res = fmt.Sprintf("Hello %s.", req.Name)
@@ -32,7 +32,7 @@ func (l *Logic) Say(req *SayRequest) *Response{
 }
 
 func (l *Logic) Play(req *PlayRequest) *Response {
-	log.Debug("Ball: ", req.Ball)
+	log.Debugf("Ball: %s", req.Ball)
 
 	resp := new(Response)
 	resp.Res = fmt.Sprintf("Play %s.", req.Ball)
@@ -63,7 +63,7 @@ func (r *HelloRouter) PreHandle(req transport.Request) {
 // Test Handle
 func (r *HelloRouter) Handle(req transport.Request) {
 	// 读取客户端的数据
-	log.Debug("serviceID=%d, methodID=%d, data=%s\n", req.GetServiceID(), req.GetMethodID(), string(req.GetData()))
+	log.Debugf("serviceID=%d, methodID=%d, data=%s", req.GetServiceID(), req.GetMethodID(), string(req.GetData()))
 
 	switch req.GetMethodID() {
 	case EVENT_SAY:

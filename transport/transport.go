@@ -158,8 +158,8 @@ type MessageHandler interface {
 	// 启动工作池
 	StartWorkerPool()
 
-	// // 将消息交给任务队列(taskQueue),交由worker处理
-	SendMsgToTaskQueue(req Request)
+	// 将执行的任务交给工作池处理
+	EntryTaskToWorkerPool(req Request)
 }
 
 /*
