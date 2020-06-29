@@ -3,8 +3,10 @@ package transport
 import (
 	"errors"
 	"fmt"
-	"io"
+	"github.com/treeforest/gos/transport/context"
 	"github.com/treeforest/logger"
+	"hash/crc32"
+	"io"
 	"net"
 	"sync"
 )
@@ -39,7 +41,7 @@ type connection struct {
 }
 
 func NewConnection(tcpServer Server, conn *net.TCPConn, connID uint32, msgHandler MessageHandler) Connection {
-	c := GlobalConnectionPool.Get()
+	c := globalPool.GetConnection()
 	c.tcpServer = tcpServer
 	c.conn = conn
 	c.connID = connID
@@ -78,8 +80,8 @@ func (c *connection) Stop() {
 	c.tcpServer.CallOnConnStop(c)
 
 	// 回收链接
-	//c.conn.Close()
-	GlobalTCPConnPool.Put(c.conn)
+	c.conn.Close()
+	globalPool.PutTCPConn(c.conn)
 
 	// 通知writer关闭
 	c.existChan <- true
@@ -92,9 +94,7 @@ func (c *connection) Stop() {
 	close(c.msgChan)
 
 	// 回收connection对象
-	GlobalConnectionPool.Put(c)
-
-	fmt.Println()
+	globalPool.PutConnection(c)
 }
 
 func (c *connection) GetTCPConnection() *net.TCPConn {
@@ -109,14 +109,29 @@ func (c *connection) RemoteAddr() net.Addr {
 	return c.conn.RemoteAddr()
 }
 
-func (c *connection) Send(serviceID, methodID uint32, data []byte) error {
+func (c *connection) SendErrCode(code context.Code) {
+	ctx := globalPool.GetContext()
+	ctx.Result = code
+	c.Send(ctx, nil)
+	// 若发送错误码，则直接回收上下文
+	globalPool.PutContext(ctx)
+}
+
+func (c *connection) Send(ctx *context.Context, data []byte) error {
 	if c.closed {
 		return errors.New("Send error: connection closed when send message.")
 	}
 
+	// set data in context
+	ctx.Data = data
+
+	msg := globalPool.GetMessage()
+	msg.Reset(ctx)
+	defer globalPool.PutMessage(msg)
+
 	// 封包处理
 	pack := NewDataPack()
-	binaryMsg, err := pack.Pack(NewMessage(serviceID, methodID , data))
+	binaryMsg, err := pack.Pack(msg)
 	if err != nil {
 		return fmt.Errorf("Send error: pack failed, %v", err)
 	}
@@ -161,13 +176,17 @@ func (c *connection) startReader() {
 		_, err := io.ReadFull(c.GetTCPConnection(), headData)
 		if err != nil {
 			log.Warnf("read head data error: %v", err)
+			//c.SendErrCode(context.Code_ERR_GET_HEAD)
 			break
 		}
 
 		// 2、解析消息头部数据
-		msg, err := pack.Unpack(headData)
+		msg := globalPool.GetMessage()
+		err = pack.Unpack(headData, msg)
 		if err != nil {
 			log.Errorf("unpack head data error: %v", err)
+			globalPool.PutMessage(msg)
+			//c.SendErrCode(context.Code_ERR_UNPACK_HEAD)
 			break
 		}
 
@@ -175,25 +194,33 @@ func (c *connection) startReader() {
 			// msg 有数据
 			// 3、根据dataLen将data读出来
 			data := make([]byte, msg.GetLen())
-
 			if _, err := io.ReadFull(c.GetTCPConnection(), data); err != nil {
-				log.Errorf("unpack message data error: %v", err)
+				log.Errorf("get message data error: %v", err)
+				globalPool.PutMessage(msg)
+				//c.SendErrCode(context.Code_ERR_GET_DATA)
 				break
 			}
 
 			msg.SetData(data)
 
-			// 读取数据完毕, 交路由器处理
-			// req := NewRequest(c, msg)
-			req := GlobalRequestPool.Get()
-			req.conn = c
-			req.msg = msg
+			// 4、crc32校验
+			if !msg.ChecksumIEEE() {
+				// 回执校验和失败
+				log.Warn("Checksum failed.")
+				globalPool.PutMessage(msg)
+				go c.SendErrCode(context.Code_ERR_CHECKSUM)
+				continue
+			}
 
-			// 交给Worker的任务队列
+			// 5、读取数据完毕, 交给Worker的任务队列
+			req := globalPool.GetRequest()
+			req.SetRequest(c, msg.GetData())
 			c.msgHandler.EntryTaskToWorkerPool(req)
 
 			// 未开启工作池，直接一个协程进行处理
 			// go c.msgHandler.HandleRequest(req)
+
+			globalPool.PutMessage(msg)
 		}
 	}
 }
@@ -221,4 +248,11 @@ func (c *connection) startWriter() {
 			return
 		}
 	}
+}
+
+func (c *connection) checkSum(cs uint32, data []byte) bool {
+	if cs == crc32.ChecksumIEEE(data) {
+		return true
+	}
+	return false
 }

@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"sync"
-	"github.com/treeforest/logger"
 	"github.com/treeforest/gos/config"
+	"github.com/treeforest/logger"
+	"sync"
 )
 
 // 封包、拆包的具体模块
@@ -24,8 +24,8 @@ func NewDataPack() DataPacker {
 
 // 获取数据包长度
 func (p dataPack) GetHeadLen() uint32 {
-	// DataLen uint32 (4字节) + serviceID uint32 （4 字节） + methodID uint32 (4字节)
-	return 12
+	// dataLen uint32 (4字节) + checkSum uint32 (4字节)
+	return 8
 }
 
 // 封包方法
@@ -37,13 +37,8 @@ func (p dataPack) Pack(msg Message) ([]byte, error) {
 		return nil, err
 	}
 
-	// 将服务ID写入数据包
-	if err := binary.Write(dataBuff, binary.LittleEndian, msg.GetServiceID()); err != nil {
-		return nil, err
-	}
-
-	// 将方法ID写入数据包
-	if err := binary.Write(dataBuff, binary.LittleEndian, msg.GetMethodID()); err != nil {
+	// 将校验码写入数据包
+	if err := binary.Write(dataBuff, binary.LittleEndian, msg.GetCheckSum()); err != nil {
 		return nil, err
 	}
 
@@ -56,35 +51,29 @@ func (p dataPack) Pack(msg Message) ([]byte, error) {
 }
 
 // 拆包方法
-func (p dataPack) Unpack(binaryData []byte) (Message, error) {
+func (p dataPack) Unpack(binaryData []byte, m Message) error {
 	dataBuff := bytes.NewReader(binaryData)
 
 	// 解压head信息，得到dataLen和messageID
-	msg := &message{}
+	msg := m.(*message)
 
 	// dataLen
 	if err := binary.Read(dataBuff, binary.LittleEndian, &msg.dataLen); err != nil {
 		log.Warnf("Unpack dataLen error.")
-		return nil, err
+		return err
 	}
 
-	// serviceID
-	if err := binary.Read(dataBuff, binary.LittleEndian, &msg.serviceID); err != nil {
+	// checkSum
+	if err := binary.Read(dataBuff, binary.LittleEndian, &msg.checkSum); err != nil {
 		log.Warnf("Unpack serviceID error.")
-		return nil, err
-	}
-
-	// methodID
-	if err := binary.Read(dataBuff, binary.LittleEndian, &msg.methodID); err != nil {
-		log.Warnf("Unpack methodID error.")
-		return nil, err
+		return err
 	}
 
 	// 判断dataLen是否符合要求的最大包长度
 	if config.ServerConfig.MaxPackageSize < msg.GetLen() {
 		log.Warnf("MaxPackageSize: %d , msg: %v\n", config.ServerConfig.MaxPackageSize, msg)
-		return nil, errors.New("too large msg data recv!")
+		return errors.New("too large msg data recv!")
 	}
 
-	return msg, nil
+	return nil
 }

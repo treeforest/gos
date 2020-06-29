@@ -1,75 +1,90 @@
 package transport
 
 import (
-	"sync"
+	"github.com/treeforest/gos/transport/context"
 	"net"
+	"sync"
 )
 
 /*
-	TCP 链接套接字临时对象池
+ * 全局临时对象池
  */
-var GlobalTCPConnPool *tcpConnPool = &tcpConnPool{
-	pool: sync.Pool{
+var globalPool *pool = newPool()
+
+type pool struct {
+	tcpConnPool sync.Pool //TCP 链接套接字临时对象池
+	connPool    sync.Pool //链接临时对象池
+	requestPool sync.Pool //请求临时对象池
+	contextPool sync.Pool //上下文临时对象池
+	messagePool sync.Pool //消息临时对象池
+}
+
+func newPool() *pool {
+	p := new(pool)
+	p.tcpConnPool = sync.Pool{
 		New: func() interface{} {
 			return new(net.TCPConn)
 		},
-	},
-}
-
-type tcpConnPool struct {
-	pool sync.Pool
-}
-
-func (p *tcpConnPool) Get() *net.TCPConn {
-	return p.pool.Get().(*net.TCPConn)
-}
-
-func (p *tcpConnPool) Put(c *net.TCPConn) {
-	p.pool.Put(c)
-}
-
-/*
-	链接临时对象池
- */
-var GlobalConnectionPool *connectionPool = &connectionPool{
-	pool:sync.Pool {
+	}
+	p.connPool = sync.Pool{
 		New: func() interface{} {
 			return new(connection)
 		},
-	},
-}
-
-type connectionPool struct {
-	pool sync.Pool
-}
-
-func (p *connectionPool) Get() *connection {
-	return p.pool.Get().(*connection)
-}
-
-func (p *connectionPool) Put(c *connection) {
-	p.pool.Put(c)
-}
-
-/*
-	请求模块临时对象池
- */
-var GlobalRequestPool *requestPool = &requestPool {
-	pool:sync.Pool {
+	}
+	p.requestPool = sync.Pool{
 		New: func() interface{} {
 			return new(request)
 		},
-	},
+	}
+	p.contextPool = sync.Pool{
+		New: func() interface{} {
+			return new(context.Context)
+		},
+	}
+	p.messagePool = sync.Pool{
+		New: func() interface{} {
+			return new(message)
+		},
+	}
+	return p
 }
 
-type requestPool struct {
-	pool sync.Pool
+func (p *pool) GetTCPConn() *net.TCPConn {
+	return p.tcpConnPool.Get().(*net.TCPConn)
 }
 
-func (p *requestPool) Get() *request {
-	return p.pool.Get().(*request)
+func (p *pool) PutTCPConn(c *net.TCPConn) {
+	p.tcpConnPool.Put(c)
 }
 
-func (p *requestPool) Put(c *request) {
-	p.pool.Put(c)
+func (p *pool) GetConnection() *connection {
+	return p.connPool.Get().(*connection)
+}
+
+func (p *pool) PutConnection(c *connection) {
+	p.connPool.Put(c)
+}
+
+func (p *pool) GetRequest() *request {
+	return p.requestPool.Get().(*request)
+}
+
+func (p *pool) PutRequest(r *request) {
+	p.requestPool.Put(r)
+}
+
+func (p *pool) GetContext() *context.Context {
+	return p.contextPool.Get().(*context.Context)
+}
+
+func (p *pool) PutContext(c *context.Context) {
+	p.contextPool.Put(c)
+}
+
+func (p *pool) GetMessage() *message {
+	return p.messagePool.Get().(*message)
+}
+
+func (p *pool) PutMessage(m *message) {
+	p.messagePool.Put(m)
 }

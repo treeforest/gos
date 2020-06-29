@@ -2,8 +2,8 @@ package transport
 
 import (
 	"fmt"
-	"github.com/treeforest/logger"
 	"github.com/treeforest/gos/config"
+	"github.com/treeforest/logger"
 )
 
 /*
@@ -14,7 +14,7 @@ type messageHandle struct {
 	routerMap map[uint32]Router
 
 	// 工作池的消息队列
-	taskChan  chan Request
+	taskChan chan Request
 
 	// 业务工作Worker池的Worker数量
 	workerPoolSize uint32
@@ -40,8 +40,9 @@ func (h *messageHandle) HandleRequest(req Request) {
 	handler.Handle(req)
 	handler.PostHandle(req)
 
-	// 回收对象资源
-	GlobalRequestPool.Put(req.(*request))
+	// 回收临时对象资源
+	globalPool.PutContext(req.GetContext())
+	globalPool.PutRequest(req.(*request))
 }
 
 // 为消息添加具体的处理逻辑

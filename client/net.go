@@ -1,12 +1,14 @@
 package client
 
 import (
-	"fmt"
-	"io"
-	"time"
-	"net"
 	"container/list"
+	"fmt"
+	"github.com/treeforest/gos/transport/context"
 	"github.com/treeforest/logger"
+	"github.com/golang/protobuf/proto"
+	"io"
+	"net"
+	"time"
 )
 
 type client struct {
@@ -17,14 +19,18 @@ type client struct {
 
 func NewClient() Client {
 	return &client{
-		recvQueue:list.New(),
-		sendQueue:list.New(),
+		recvQueue: list.New(),
+		sendQueue: list.New(),
 	}
 }
 
 func (c *client) Send(serviceID, methodID uint32, data []byte) {
-	msg := NewMessage(serviceID, methodID, data)
-	c.sendQueue.PushBack(msg)
+	ctx := new(context.Context)
+	ctx.ServiceId = serviceID
+	ctx.MethodId = methodID
+	ctx.Data = data
+
+	c.sendQueue.PushBack(NewMessage(ctx))
 }
 
 func (c *client) Recv() Message {
@@ -48,7 +54,7 @@ func (c *client) Dial(address string) {
 	// 开启读
 	go func() {
 		for {
-			headData := make([]byte, 12)
+			headData := make([]byte, 8)
 			_, err = io.ReadFull(c.conn, headData)
 			if err != nil {
 				log.Warn("read head error")
@@ -61,12 +67,17 @@ func (c *client) Dial(address string) {
 				break
 			}
 
-			if msg.dataLen > 0 {
-				msg.data = make([]byte, msg.dataLen)
-				_, err := io.ReadFull(c.conn, msg.data)
+			if msg.DataLen > 0 {
+				msg.Data = make([]byte, msg.DataLen)
+				_, err := io.ReadFull(c.conn, msg.Data)
 				if err != nil {
 					log.Warn("transport unpack data error:", err)
+					break
 				}
+
+				ctx := new(context.Context)
+				proto.Unmarshal(msg.Data, ctx)
+				msg.ctx = ctx
 
 				c.recvQueue.PushBack(msg)
 			}

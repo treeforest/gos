@@ -1,6 +1,9 @@
 package transport
 
-import "net"
+import (
+	"github.com/treeforest/gos/transport/context"
+	"net"
+)
 
 /*
  服务接口
@@ -54,7 +57,7 @@ type Connection interface {
 	RemoteAddr() net.Addr
 
 	// 发送数据，将数据发送给远程的客户端
-	Send(serviceID, methodID uint32, data []byte) error
+	Send(ctx *context.Context, data []byte) error
 
 	// 设置链接属性
 	SetProperty(key string, value interface{})
@@ -77,14 +80,17 @@ type Request interface {
 	// 得到当前链接
 	GetConnection() Connection
 
-	// 得到请求的消息数据
-	GetData() []byte
+	// 上下文
+	GetContext() *context.Context
 
-	// 得到当前请求的服务ID
+	// 获取服务ID
 	GetServiceID() uint32
 
-	// 得到当前请求的服务方法ID
+	// 获取方法ID
 	GetMethodID() uint32
+
+	// 获取session
+	GetSession() uint32
 }
 
 /*
@@ -105,14 +111,14 @@ type Router interface {
  将请求的消息封装到一个Message中，定义抽象的接口
 */
 type Message interface {
+	// 重置 context 到 message 中
+	Reset(ctx *context.Context)
+
 	// 获取消息的长度
 	GetLen() uint32
 
-	// 获取服务的ID
-	GetServiceID() uint32
-
-	// 获取对应服务的方法ID
-	GetMethodID() uint32
+	// 获取检验码
+	GetCheckSum() uint32
 
 	//获取消息的内容
 	GetData() []byte
@@ -120,14 +126,14 @@ type Message interface {
 	//设置消息的长度
 	SetLen(uint32)
 
-	// 设置服务ID
-	SetServiceID(uint32)
-
-	// 设置服务中对应方法的ID
-	SetMethodID(uint32)
+	// 设置校验码
+	SetCheckSum(uint32)
 
 	// 设置消息的内容
 	SetData([]byte)
+
+	// 检测校验和
+	ChecksumIEEE() bool
 }
 
 /*
@@ -142,7 +148,7 @@ type DataPacker interface {
 	Pack(Message) ([]byte, error)
 
 	// 拆包方法
-	Unpack([]byte) (Message, error)
+	Unpack([]byte, Message) error
 }
 
 /*

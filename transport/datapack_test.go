@@ -57,7 +57,7 @@ func TestDataPack(t *testing.T) {
 						}
 
 						// 读取数据完毕
-						fmt.Println("--->Recv serviceID:", msg.serviceID, ", methodID:", msg.methodID,", dataLen:", msg.dataLen, ", data:", string(msg.data))
+						fmt.Println("--->Recv serviceID:", msg.serviceID, ", methodID:", msg.methodID, ", dataLen:", msg.dataLen, ", data:", string(msg.data))
 					}
 				}
 			}(conn)

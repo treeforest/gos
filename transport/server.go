@@ -2,9 +2,9 @@ package transport
 
 import (
 	"fmt"
+	"github.com/treeforest/gos/config"
 	"github.com/treeforest/logger"
 	"net"
-	"github.com/treeforest/gos/config"
 	"sync"
 )
 
@@ -71,20 +71,20 @@ func (s *server) Start() {
 		var cid uint32 = 1 // 连接ID
 
 		for {
-			conn := GlobalTCPConnPool.Get()
+			conn := globalPool.GetTCPConn()
 
 			conn, err = listener.AcceptTCP()
 			if err != nil {
+				globalPool.PutTCPConn(conn)
 				log.Errorf("Accept TCP error: %v", err)
 				continue
 			}
 
 			// 判断已经连接的数量，若以达到最大连接数，则直接关闭连接
 			if s.connMgr.Len() >= config.ServerConfig.MaxConn {
-				//TODO: 回执给客户端超出最大连接的错误包
-
+				globalPool.PutTCPConn(conn)
 				log.Warnf("Connection overflow!")
-				GlobalTCPConnPool.Put(conn)
+				//TODO: 回执给客户端超出最大连接的错误包
 				continue
 			}
 
@@ -142,6 +142,7 @@ func (s *server) CallOnConnStop(c Connection) {
 */
 var server_once sync.Once
 var global_server *server
+
 func NewServer(serverName string) Server {
 	server_once.Do(func() {
 		global_server = &server{
