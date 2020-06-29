@@ -1,7 +1,9 @@
 package transport
 
 import (
-	"fmt"
+	"github.com/golang/protobuf/proto"
+	"github.com/treeforest/gos/transport/context"
+	"hash/crc32"
 	"io"
 	"net"
 	"testing"
@@ -15,7 +17,7 @@ func TestDataPack(t *testing.T) {
 	*/
 	listener, err := net.Listen("tcp", "127.0.0.1:7777")
 	if err != nil {
-		fmt.Println("transport listen error:", err)
+		t.Errorf("transport listen error: %v", err)
 		return
 	}
 
@@ -23,7 +25,7 @@ func TestDataPack(t *testing.T) {
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
-				fmt.Println("transport accept error", err)
+				t.Errorf("transport accept error: %v", err)
 				continue
 			}
 
@@ -35,29 +37,36 @@ func TestDataPack(t *testing.T) {
 					headData := make([]byte, pack.GetHeadLen())
 					_, err := io.ReadFull(conn, headData)
 					if err != nil {
-						fmt.Println("read head error")
+						t.Error("read head error")
 						break
 					}
 
-					msgHead, err := pack.Unpack(headData)
+					msg := new(message)
+					err = pack.Unpack(headData, msg)
 					if err != nil {
-						fmt.Println("transport unpack head error:", err)
+						t.Errorf("transport unpack head error: %v", err)
 						return
 					}
 
-					if msgHead.GetLen() > 0 {
+					if msg.GetLen() > 0 {
 						// msg 有数据
 						// 2、根据dataLen将data读出来
-						msg := msgHead.(*message)
 						msg.data = make([]byte, msg.GetLen())
 
 						_, err := io.ReadFull(conn, msg.data)
 						if err != nil {
-							fmt.Println("transport unpack data error:", err)
+							t.Errorf("transport unpack data error: %v", err)
 						}
 
+						if !msg.ChecksumIEEE() {
+							t.Error("Checksum error.")
+						}
+
+						ctx := new(context.Context)
+						proto.Unmarshal(msg.GetData(), ctx)
+
 						// 读取数据完毕
-						fmt.Println("--->Recv serviceID:", msg.serviceID, ", methodID:", msg.methodID, ", dataLen:", msg.dataLen, ", data:", string(msg.data))
+						t.Logf("--->Recv context: %v", ctx)
 					}
 				}
 			}(conn)
@@ -70,42 +79,50 @@ func TestDataPack(t *testing.T) {
 	*/
 	conn, err := net.Dial("tcp", "127.0.0.1:7777")
 	if err != nil {
-		fmt.Println("client dial error:", err)
+		t.Errorf("client dial error: %v", err)
 		return
 	}
 
 	pack := NewDataPack()
 
 	// 模拟粘包过程,封装两个msg一同发送
+	ctx1 := new(context.Context)
+	ctx1.ServiceId = 1
+	ctx1.MethodId = 2
+	ctx1.Data = []byte{'h', 'e', 'l', 'l', 'o'}
+	data1, _ := proto.Marshal(ctx1)
 	msg1 := &message{
-		serviceID: 1,
-		methodID:  2,
-		dataLen:   5,
-		data:      []byte{'h', 'e', 'l', 'l', 'o'},
+		dataLen:  uint32(len(data1)),
+		checkSum: crc32.ChecksumIEEE(data1),
+		data:     data1,
 	}
-	data, err := pack.Pack(msg1)
+	buf1, err := pack.Pack(msg1)
 	if err != nil {
-		fmt.Println("client pack msg1 error:", err)
+		t.Errorf("client pack msg1 error: %v", err)
 		return
 	}
 
+	ctx2 := new(context.Context)
+	ctx2.ServiceId = 2
+	ctx2.MethodId = 12
+	ctx2.Data = []byte{'w', 'o', 'r', 'l', 'd'}
+	data2, _ := proto.Marshal(ctx2)
 	msg2 := &message{
-		serviceID: 2,
-		methodID:  12,
-		dataLen:   5,
-		data:      []byte{'w', 'o', 'r', 'l', 'd'},
+		dataLen:  uint32(len(data2)),
+		checkSum: crc32.ChecksumIEEE(data2),
+		data:     data2,
 	}
-	data2, err := pack.Pack(msg2)
+	buf2, err := pack.Pack(msg2)
 	if err != nil {
-		fmt.Println("client pack msg2 error:", err)
+		t.Errorf("client pack msg2 error: %v", err)
 		return
 	}
 
 	// 模拟粘包
-	data = append(data, data2...)
+	buf := append(buf1, buf2...)
 
 	// 一次性写
-	conn.Write(data)
+	conn.Write(buf)
 
 	// 阻塞
 	select {}
