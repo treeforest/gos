@@ -65,6 +65,7 @@ func (c *serverConfig) load() {
 	ServerConfig.WorkerPoolSize = uint32(WorkerPoolSize)
 	ServerConfig.MaxPackageSize = uint32(MaxPackageSize)
 	ServerConfig.MaxWorkerTaskLen = uint32(MaxWorkerTaskLen)
+
 }
 
 /*
