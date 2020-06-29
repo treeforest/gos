@@ -1,0 +1,18 @@
+syntax="proto3";
+option go_package = ".;demo"; //协议包名
+
+enum ServiceID {
+    demo = 0;
+}
+
+enum Event {
+    Hello = 0;
+}
+
+message HelloRequest {
+    string name = 1;
+}
+
+message HelloResponse {
+    string ret = 1;
+}

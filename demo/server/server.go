@@ -2,51 +2,23 @@ package main
 
 import (
 	"fmt"
+	"github.com/golang/protobuf/proto"
+	"github.com/treeforest/gos/demo/pb"
 	"github.com/treeforest/gos/transport"
 	"github.com/treeforest/logger"
 	"encoding/json"
 	)
 
-type SayRequest struct {
-	Name string `json:"Name"`
-}
-
-type PlayRequest struct {
-	Ball string `json:"Ball"`
-}
-
-type Response struct {
-	Res string `json:"Result"`
-}
-
 // 逻辑实现
 type Logic struct {}
 
 // Test Handle
-func (l *Logic) Say(req *SayRequest) *Response{
+func (l *Logic) Hello(req *demo.HelloRequest) *demo.HelloResponse{
 	log.Debugf("Name: %s", req.Name)
-
-	resp := new(Response)
-	resp.Res = fmt.Sprintf("Hello %s.", req.Name)
+	resp := new(demo.HelloResponse)
+	resp.Ret = fmt.Sprintf("Hello %s.", req.Name)
 	return resp
 }
-
-func (l *Logic) Play(req *PlayRequest) *Response {
-	log.Debugf("Ball: %s", req.Ball)
-
-	resp := new(Response)
-	resp.Res = fmt.Sprintf("Play %s.", req.Ball)
-	return resp
-}
-
-// 服务ID
-const CODE_HELLO = 101
-
-// 服务方法对应的ID
-const (
-	EVENT_SAY = iota
-	EVENT_PLAY
-)
 
 // 实例句柄
 var m_handle = &Logic{}
@@ -63,38 +35,23 @@ func (r *HelloRouter) PreHandle(req transport.Request) {
 // Test Handle
 func (r *HelloRouter) Handle(req transport.Request) {
 	// 读取客户端的数据
-	log.Debugf("serviceID=%d, methodID=%d, data=%s", req.GetServiceID(), req.GetMethodID(), string(req.GetData()))
+	log.Debugf("serviceID=%d, methodID=%d", req.GetServiceID(), req.GetMethodID())
 
 	switch req.GetMethodID() {
-	case EVENT_SAY:
-		var resp *Response
-		sayReq := &SayRequest{}
+	case uint32(demo.Event_Hello):
+		var resp *demo.HelloResponse
+		r := new(demo.HelloRequest)
 
-		if err := json.Unmarshal(req.GetData(), sayReq); err != nil {
+		if err := proto.Unmarshal(req.GetContext().GetData(), r); err != nil {
 			log.Error("Say request unmarshal error: ", err)
-			resp = new(Response)
-			resp.Res = "SayRequest unmarshal error."
+			resp = new(demo.HelloResponse)
+			resp.Ret = "SayRequest unmarshal error."
 		} else {
-			resp = m_handle.Say(sayReq)
+			resp = m_handle.Hello(r)
 		}
 
 		data, _ := json.Marshal(resp)
-		req.GetConnection().Send(req.GetServiceID(), req.GetMethodID(), data)
-
-	case EVENT_PLAY:
-		var resp *Response
-		playReq := &PlayRequest{}
-
-		if err := json.Unmarshal(req.GetData(), playReq); err != nil {
-			log.Error("PlayRequest unmarshal error: ", err)
-			resp = new(Response)
-			resp.Res = "PlayRequest unmarshal error."
-		} else {
-			resp = m_handle.Play(playReq)
-		}
-
-		data, _ := json.Marshal(resp)
-		req.GetConnection().Send(req.GetServiceID(), req.GetMethodID(), data)
+		req.GetConnection().Send(req.GetContext(), data)
 	}
 }
 
@@ -113,13 +70,13 @@ func OnConnStop(c transport.Connection) {
 func main() {
 	log.SetFileLogger()
 
-	s := transport.NewServer("[lsgo V0.1]")
+	s := transport.NewServer("[Demo]")
 
 	s.SetOnConnStartFunc(OnConnStart)
 	s.SetOnConnStopFunc(OnConnStop)
 
 	// 添加router
-	s.RegisterRouter(CODE_HELLO, &HelloRouter{})
+	s.RegisterRouter(uint32(demo.ServiceID_demo), &HelloRouter{})
 
 	s.Serve()
 }
