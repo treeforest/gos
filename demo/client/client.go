@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/treeforest/gos/client"
@@ -66,9 +65,10 @@ func read(conn net.Conn) {
 			}
 
 			resp := new(demo.HelloResponse)
-			json.Unmarshal(msg.GetContext().GetData(), resp)
+			proto.Unmarshal(msg.GetContext().GetData(), resp)
 
 			// 读取数据完毕
+
 			fmt.Println(cnt, "--->Recv serviceID:", msg.GetServiceID(), " methodID:", msg.GetMethodID(), ", dataLen:", msg.DataLen, ", resp:", resp)
 		}
 	}

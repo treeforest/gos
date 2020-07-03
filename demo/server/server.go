@@ -6,8 +6,7 @@ import (
 	"github.com/treeforest/gos/demo/pb"
 	"github.com/treeforest/gos/transport"
 	"github.com/treeforest/logger"
-	"encoding/json"
-	)
+)
 
 // 逻辑实现
 type Logic struct {}
@@ -50,7 +49,7 @@ func (r *HelloRouter) Handle(req transport.Request) {
 			resp = m_handle.Hello(r)
 		}
 
-		data, _ := json.Marshal(resp)
+		data, _ := proto.Marshal(resp)
 		req.GetConnection().Send(req.GetContext(), data)
 	}
 }
