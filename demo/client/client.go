@@ -72,7 +72,6 @@ func read(conn net.Conn) {
 			fmt.Println(cnt, "--->Recv serviceID:", msg.GetServiceID(), " methodID:", msg.GetMethodID(), ", dataLen:", msg.DataLen, ", resp:", resp)
 		}
 	}
-
 }
 
 func main() {
